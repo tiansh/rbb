@@ -4,9 +4,9 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.21
-// @updateURL   http://userscripts.org/scripts/source/176946.meta.js
-// @downloadURL http://userscripts.org/scripts/source/176946.user.js
+// @version     2.22
+// @updateURL   http://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
+// @downloadURL http://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
 // @grant       GM_getValue
 // @grant       GM_setValue
@@ -97,6 +97,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.22 ：将脚本迁移到github
    * 2.21 ：修复Chrome和Opera下不能开启打印调试信息的问题，更新include规则
    * 2.20 ：通过unsafeWindow暴露给其他脚本的一些接口，由于原网站开始使用hash作为参数故停止对hash的修改
    * 2.19 ：支持新的自动换分页
