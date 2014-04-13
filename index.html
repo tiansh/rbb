@@ -2,7 +2,7 @@
 <html lang="zh-cn">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
   <title>Replace bilibili bofqi</title>
   <style>
     html, body { font-family: "Microsoft YaHei",Helvetica,Arial,sans-serif; font-size: 16px; font-weight: normal; line-height: 24px; margin: 0; padding: 0; }
@@ -33,7 +33,7 @@
     .browser-icon { position: absolute; left: 20px; top: 20px; }
     .warning { color: red; font-weight: bold; }
     .in { padding: 5px 2em; border: 4px; }
-    p { margin: 0.5em 0; }
+    .p { margin: 0.5em 0; }
     ul { margin: 0; }
   </style>
   <script>
@@ -89,7 +89,7 @@
           <span>在github上报告错误</span>
         </div>
         <div id="report2">
-          <a href="http://member.bilibili.tv/#msg&act=new&mid=1378109" target="_blank">私信我</a>
+          <a href="http://member.bilibili.tv/#msg&amp;act=new&amp;mid=1378109" target="_blank">私信我</a>
           <span>在bilibili上私信作者</span>
         </div>
       </div>
@@ -143,41 +143,41 @@
   </div>
   <h3>恢复原生播放器</h3>
   <div class="in">
-    <p><strong>脚本会自动将外站的播放器替换为原生的播放器。</strong></p>
-    <p>脚本主要作用于bilibili网站中一些不是原生播放器的视频。脚本会自动查找对应的原生播放器是否可用，若找到且确认可用会自动替换播放器。</p>
-    <p>这个过程主要分为查找视频地址（即cid）和检查视频地址是否可以正常播放两个步骤。检查视频是否可用的意义在于避免替换了不支持的视频猴出现“非常抱歉”的16秒视频。</p>
-    <p>如果检查视频播放花费了太多的时间，脚本会询问是否忽略检查直接替换。如果你发现播放器左下角显示“加载视频地址…[完成]”，那么说明替换播放器已经成功。如果之后出现无限小电视的情况，可能是网络的问题，或者是视频源的问题。</p>
-    <p>检查是否可以正常播放时有如下几种常见错误：
+    <div class="p"><strong>脚本会自动将外站的播放器替换为原生的播放器。</strong></div>
+    <div class="p">脚本主要作用于bilibili网站中一些不是原生播放器的视频。脚本会自动查找对应的原生播放器是否可用，若找到且确认可用会自动替换播放器。</div>
+    <div class="p">这个过程主要分为查找视频地址（即cid）和检查视频地址是否可以正常播放两个步骤。检查视频是否可用的意义在于避免替换了不支持的视频猴出现“非常抱歉”的16秒视频。</div>
+    <div class="p">如果检查视频播放花费了太多的时间，脚本会询问是否忽略检查直接替换。如果你发现播放器左下角显示“加载视频地址…[完成]”，那么说明替换播放器已经成功。如果之后出现无限小电视的情况，可能是网络的问题，或者是视频源的问题。</div>
+    <div class="p">检查是否可以正常播放时有如下几种常见错误：
       <ul>
         <li>“视频不允许在您当前所在地区播放”：一些视频不允许在中国大陆等地区（可能包括日本）播放，所以您需要使用一个在这些地区以外的代理并将<span>http://interface.bilibili.cn/playurl?*</span>作为代理规则加入到代理列表中。关于什么是代理、怎么使用代理等问题不在本文的讨论范围内，请自行Google。</li>
         <li>“（该视频当前不可用）”或“无法替换**源的视频”：一些视频可能无法替换为原始的播放器，还有一些视频可能需要等待几小时到一天的时间才能替换播放器。如果该视频新出不久，而且您不是急着马上要看到的话，可以考虑过一段时间之后再试试。</li>
       </ul>
-    </p>
-    <p>应用举例：<a target="_blank" href="http://www.bilibili.tv/video/av671693/">av671693: 【4月】某科学的超电磁炮S 16</a>、<a target="_blank" href="http://www.bilibili.tv/video/av788874/">av788874: 【10月】悠哉日常大王 01</a>。</p>
+    </div>
+    <div class="p">应用举例：<a target="_blank" href="http://www.bilibili.tv/video/av671693/">av671693: 【4月】某科学的超电磁炮S 16</a>、<a target="_blank" href="http://www.bilibili.tv/video/av788874/">av788874: 【10月】悠哉日常大王 01</a>。</div>
   </div>
   <h3>长按鼠标菜单</h3>
   <div class="in">
-    <p><strong>在视频连接上按住鼠标左键，可以出现一个选择播放位置或选择分页的菜单。</strong></p>
-    <p>有些视频点击后自动跳转到其他站点，对于这类视频，您可以在视频链接上按住鼠标左键。脚本会弹出一个选择播放位置的菜单。在其中选择“生成页面”即可使用一个伪造的视频页面观看视频。如果脚本检查到视频不能正常播放，会在菜单的顶部给出错误信息进行提示。</p>
-    <p>对于多分页的视频，在链接上长按鼠标会弹出一个选择分页的菜单，你可以直接选择想要的分页而不必先打开第一个分页。</p>
-    <p>应用举例：<a target="_blank" href="http://www.bilibili.tv/video/av782436/">av782436: 【10月】KILL LA KILL 01</a>、<a target="_blank" href="http://www.bilibili.tv/video/av548141/">av548141: 【4月】我的妹妹不可能那么可爱 第二季 01</a>（需要将脚本应用到本页面，或在bilibili站点中使用，长按相应链接生效）。</p>
+    <div class="p"><strong>在视频连接上按住鼠标左键，可以出现一个选择播放位置或选择分页的菜单。</strong></div>
+    <div class="p">有些视频点击后自动跳转到其他站点，对于这类视频，您可以在视频链接上按住鼠标左键。脚本会弹出一个选择播放位置的菜单。在其中选择“生成页面”即可使用一个伪造的视频页面观看视频。如果脚本检查到视频不能正常播放，会在菜单的顶部给出错误信息进行提示。</div>
+    <div class="p">对于多分页的视频，在链接上长按鼠标会弹出一个选择分页的菜单，你可以直接选择想要的分页而不必先打开第一个分页。</div>
+    <div class="p">应用举例：<a target="_blank" href="http://www.bilibili.tv/video/av782436/">av782436: 【10月】KILL LA KILL 01</a>、<a target="_blank" href="http://www.bilibili.tv/video/av548141/">av548141: 【4月】我的妹妹不可能那么可爱 第二季 01</a>（需要将脚本应用到本页面，或在bilibili站点中使用，长按相应链接生效）。</div>
   </div>
   <h3>部分绕过用户限制</h3>
   <div class="in">
-    <p><strong>脚本可以处理部分没有权限收看的视频。</strong></p>
-    <p>对于一些审核不通过的视频，或者在未登录的情况下访问一些仅限会员收看的视频。本脚本会试图通过相邻的视频地址推算当前视频的地址。</p>
-    <p>由于技术限制，这个推算很可能是不准确的，可能会有显示了错误的视频或者漏掉了一些分页的情况（一般不会发生多的情况）。效果上没什么保障。而且这一功能一般不太稳定，如果失败可以尝试刷新两次。这一功能仅为不准确地推断视频地址，不推荐长期用本脚本作为越过登录检查的工具。</p>
-    <p>如果您需要访问仅限会员收看的视频，建议您注册一个帐号。或者选用去其他通过第三方服务器获取视频地址的脚本。本脚本不会添加对第三方服务器的访问，所以不会对这一功能进行扩展。</p>
-    <p>
+    <div class="p"><strong>脚本可以处理部分没有权限收看的视频。</strong></div>
+    <div class="p">对于一些审核不通过的视频，或者在未登录的情况下访问一些仅限会员收看的视频。本脚本会试图通过相邻的视频地址推算当前视频的地址。</div>
+    <div class="p">由于技术限制，这个推算很可能是不准确的，可能会有显示了错误的视频或者漏掉了一些分页的情况（一般不会发生多的情况）。效果上没什么保障。而且这一功能一般不太稳定，如果失败可以尝试刷新两次。这一功能仅为不准确地推断视频地址，不推荐长期用本脚本作为越过登录检查的工具。</div>
+    <div class="p">如果您需要访问仅限会员收看的视频，建议您注册一个帐号。或者选用去其他通过第三方服务器获取视频地址的脚本。本脚本不会添加对第三方服务器的访问，所以不会对这一功能进行扩展。</div>
+    <div class="p">
       应用举例：<a target="_blank" href="http://www.bilibili.tv/video/av97405/">av97405: 【柯南】绀碧之棺【剧场版】</a>、<a target="_blank" href="http://www.bilibili.tv/video/av908695/">av908695: 勿审（摸索吧！部活剧II 01）</a>。<br />
       （如上举例仅供测试用途，如想观看对应视频，请到<a target="_blank" href="http://www.bilibili.tv/video/av813658">av813658: 名侦探柯南剧场版</a>、<a href="http://www.bilibili.tv/video/av908756/">av908756: 【1月】摸索吧！部活剧 II 01【GDGDclub】</a>）<br />
-    </p>
-    <p>注意，本功能只是因为上面的功能实现后所附带的功能，建议不要没事去翻那些没过审的视频，有些视频还是很毁三观的。</p>
+    </div>
+    <div class="p">注意，本功能只是因为上面的功能实现后所附带的功能，建议不要没事去翻那些没过审的视频，有些视频还是很毁三观的。</div>
   </div>
   <h3>脚本权限及用户隐私声明</h3>
   <div class="in">
-    <p>脚本使用了GreaseMonkey中的<code>GM_xmlhttpRequest</code>、<code>GM_getValue</code>、<code>GM_setValue</code>、<code>GM_deleteValue</code>、<code>GM_addStyle</code>、<code>unsafeWindow</code>接口。</p>
-    <p>
+    <div class="p">脚本使用了GreaseMonkey中的<code>GM_xmlhttpRequest</code>、<code>GM_getValue</code>、<code>GM_setValue</code>、<code>GM_deleteValue</code>、<code>GM_addStyle</code>、<code>unsafeWindow</code>接口。</div>
+    <div class="p">
       脚本使用<code>GM_xmlhttpRequest</code>用于网络访问，脚本进行的网络访问限于下列域名：<ul>
         <li>www.<span></span>bilibili.<span></span>tv</li>
         <li>bilibili.kankanews.<span></span>com</li>
@@ -189,26 +189,26 @@
       </ul>
       这些域名都是bilibili.tv站点的相关域名。<br />
       此外在长按链接弹出菜单时，脚本还会访问对应链接指向的页面。
-    </p>
-    <p>脚本使用了<code>GM_getValue </code>、<code>GM_setValue</code>和<code>GM_deleteValue</code>用于本地存储，脚本在本地存储了：从网络上获取的cid和aid的对应关系。脚本缓存的数据仅供脚本自己使用，不会发送到网络上，本脚本、其他浏览器插件和用户有权限读取这些信息。</p>
-    <p>脚本使用了<code>GM_addStyle</code>用于向页面添加自定义的样式。</p>
-    <p>
+    </div>
+    <div class="p">脚本使用了<code>GM_getValue </code>、<code>GM_setValue</code>和<code>GM_deleteValue</code>用于本地存储，脚本在本地存储了：从网络上获取的cid和aid的对应关系。脚本缓存的数据仅供脚本自己使用，不会发送到网络上，本脚本、其他浏览器插件和用户有权限读取这些信息。</div>
+    <div class="p">脚本使用了<code>GM_addStyle</code>用于向页面添加自定义的样式。</div>
+    <div class="p">
       脚本使用了<code>unsafeWindow</code>用于一些对网页进行直接操作的功能，脚本使用该接口：<ul>
         <li>显示提示信息</li>
         <li>修改页面内容，以仿造视频页面，显示会自动跳转到外站的视频。</li>
       </ul>
-    </p>
+    </div>
   </div>
 
   <h3>关于</h3>
   <div class="in">
-    <p>脚本使用 GNU GPL v3 和 CC BY-SA 3.0 协议发布。</p>
-    <p>我的B站ID：<a href="http://space.bilibili.tv/1378109/list.html">ts9(1378109)</a></p>
+    <div class="p">脚本使用 GNU GPL v3 和 CC BY-SA 3.0 协议发布。</div>
+    <div class="p">我的B站ID：<a href="http://space.bilibili.tv/1378109/list.html">ts9(1378109)</a></div>
   </div>
 
   <h3>我的其他几个bilibili脚本</h3>
   <div class="in">
-    <ul>https://tiansh.github.io/rbb/index.html
+    <ul>
       <li><a href="http://userstyles.org/styles/91891/bilibili-header-fold">[Stylish] Bilibili Header Fold</a>：将bilibili.tv上方的图去掉，扩大浏览区域。 </li>
       <li><a href="http://userscripts.org/scripts/show/391922">bilibili Player NO SSL</a>：使用 HTTP 页面显示 bilibili 的播放器而不是使用 HTTPS 页面，适用于一些因故不能访问 HTTPS 的情况。 </li>
       <li><a href="http://userscripts.org/scripts/show/184079">Bilibili Radio Danmuku</a>：<a href="http://acg.tv/u4u">bilibil电台页面</a>弹幕辅助功能</li>
