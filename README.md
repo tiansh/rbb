@@ -1,7 +1,78 @@
+# 脚本主页 #
+
+用户请移步脚本主页，本页面主要介绍脚本的一些实现原理。
+
 <span style="font-size: 60px; font-weight: bold; line-height: 80px;">[点此安装脚本](http://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js)</span>
 
 <span style="font-size: 60px; font-weight: bold; line-height: 80px;">[点此进入脚本主页](http://tiansh.github.io/rbb/)</span>
 
+# 获取cid #
+
+获取视频地址需要获取cid。这里整理当前可用的获取cid的途径。
+
+## 通过API获取 ##
+
+<code>http://api.bilibili.cn/view?type=json&id={aid}&batch=1&appkey={appkey}</code>
+
+包括标题、描述、cid、分页标题等信息。
+
+## 通过pagelist获取 ##
+
+<code>http://www.bilibili.tv/widget/getPageList?aid={aid}</code>
+
+包括cid、分页标题。
+
+## 通过HTML5接口获取 ##
+
+<code>http://www.bilibili.tv/m/html5?aid={aid}&page={pid}</code>
+
+仅限单个分页，可获取cid。
+
+## 通过flash参数获取 ##
+
+flash参数中"cid"或"\*-cid"可以提供cid
+
+# 获取aid #
+
+<code>http://interface.bilibili.cn/player?id=cid:{cid}</code>
+
+可以通过cid获取aid
+
+# 相邻cid推测aid #
+
+如果不能直接获取cid，会考虑通过相邻的视频的cid获取aid。
+
+这里的实现是基于cid[i] > cid[j] 当且仅当 aid[i] > aid[j]在大多数情况下成立作为假设的。
+
+当前脚本的实现方法是：
+* 获取前后若干视频的cid
+  * 忽略有多个分页的视频
+  * 获取不超过6个视频的cid，或不超过12个视频（包括获取失败）
+* 根据这些cid推断cid可能的区间
+  * 如果两边都没有获取到cid则报告失败
+  * 如果一边没有获取到cid，使用另一侧最大/小的cid作为替代
+  * 去掉右侧比左侧所有数字都小的，和左侧比右侧所有数字都大的
+  * 找到两边的中位数，把另一边在这个中位数以外的部分砍掉
+  * 再找两边最靠里的数，把另一边在这里面的部分砍掉
+  * 最后再找两边最靠里的数，认为我们要的cid在这个范围内
+* 根据cid可能的区间尝试
+  * 从中间往两边进行尝试
+  * 如果进行了32次网络访问不能找到视频则放弃
+    * 使用了缓存的情况下可能实际上已经尝试了更多个视频
+  * 如果找到了某个分页之后已找到分页数×4＋6个视频查找失败则停止
+* 最后整理得到aid的列表
+
+
+# 检查是否可以正常播放 #
+
+<code>http://interface.bilibili.cn/playurl?cid={cid}</code>
+
+如果返回succ或suee则说明成功
+
+
+# 修复网页全屏和浮动播放器 #
+
+请参考：http://static.hdslb.com/js/page.arc.js
 
 # 脚本接口 #
 
