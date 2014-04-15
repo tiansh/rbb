@@ -6,6 +6,8 @@
 
 <span style="font-size: 60px; font-weight: bold; line-height: 80px;">[点此进入脚本主页](http://tiansh.github.io/rbb/)</span>
 
+本脚本最早发布在userscripts.org网站上（176946），考虑到该网站不能稳定地访问，所以移动到了github上。关于2.21以前的历史版本，可以到userscripts上找到。
+
 # 获取cid #
 
 获取视频地址需要获取cid。这里整理当前可用的获取cid的途径。
@@ -38,7 +40,7 @@ flash参数中"cid"或"\*-cid"可以提供cid
 
 可以通过cid获取aid
 
-# 相邻cid推测aid #
+# 相邻视频推测cid #
 
 如果不能直接获取cid，会考虑通过相邻的视频的cid获取aid。
 
