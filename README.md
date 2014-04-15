@@ -1,46 +1,46 @@
-# 脚本主页 #
-
-用户请移步脚本主页，本页面主要介绍脚本的一些实现原理。
-
-<span style="font-size: 60px; font-weight: bold; line-height: 80px;">[点此安装脚本](http://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js)</span>
+# Replace Bilibili bofqi #
 
 <span style="font-size: 60px; font-weight: bold; line-height: 80px;">[点此进入脚本主页](http://tiansh.github.io/rbb/)</span>
 
+<span style="font-size: 60px; font-weight: bold; line-height: 80px;">[点此直接安装脚本](http://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js)</span>
+
+用户请移步脚本主页，本页面主要介绍脚本的一些实现原理。
+
 本脚本最早发布在userscripts.org网站上（176946），考虑到该网站不能稳定地访问，所以移动到了github上。关于2.21以前的历史版本，可以到userscripts上找到。
 
-# 获取cid #
+## 获取cid ##
 
 获取视频地址需要获取cid。这里整理当前可用的获取cid的途径。
 
-## 通过API获取 ##
+### 通过API获取 ###
 
 <code>http://api.bilibili.cn/view?type=json&id={aid}&batch=1&appkey={appkey}</code>
 
 包括标题、描述、cid、分页标题等信息。
 
-## 通过pagelist获取 ##
+### 通过pagelist获取 ###
 
 <code>http://www.bilibili.tv/widget/getPageList?aid={aid}</code>
 
 包括cid、分页标题。
 
-## 通过HTML5接口获取 ##
+### 通过HTML5接口获取 ###
 
 <code>http://www.bilibili.tv/m/html5?aid={aid}&page={pid}</code>
 
 仅限单个分页，可获取cid。
 
-## 通过flash参数获取 ##
+### 通过flash参数获取 ###
 
 flash参数中"cid"或"\*-cid"可以提供cid
 
-# 获取aid #
+## 获取aid ##
 
 <code>http://interface.bilibili.cn/player?id=cid:{cid}</code>
 
 可以通过cid获取aid
 
-# 相邻视频推测cid #
+## 相邻视频推测cid ##
 
 如果不能直接获取cid，会考虑通过相邻的视频的cid获取aid。
 
@@ -65,18 +65,18 @@ flash参数中"cid"或"\*-cid"可以提供cid
 * 最后整理得到aid的列表
 
 
-# 检查是否可以正常播放 #
+## 检查是否可以正常播放 ##
 
 <code>http://interface.bilibili.cn/playurl?cid={cid}</code>
 
 如果返回succ或suee则说明成功
 
 
-# 修复网页全屏和浮动播放器 #
+## 修复网页全屏和浮动播放器 ##
 
 请参考：http://static.hdslb.com/js/page.arc.js
 
-# 脚本接口 #
+## 脚本接口 ##
 
 其他脚本使用本脚本接口的方法
 
@@ -92,13 +92,13 @@ var rbb = function () {
 
 脚本提供的接口包括下列接口 
 
-## ping ##
+### ping ###
 
 * 检查本脚本是否被加载，或注册本脚本被加载时的回调函数
 * 参数：callback 回调函数（Function）
   * 参数： （无）
 
-## getAid ##
+### getAid ###
 
 * 通过cid获得aid和pid信息
 * 参数：cid 视频的chatid，如529622（Number）
@@ -107,7 +107,7 @@ var rbb = function () {
   * onerror 获取失败的回调函数（Function）
   * 参数：（无）
 
-## cid ##
+### cid ###
 
 * 获取当前视频的cid
 * 参数：callback 返回cid的回调函数（Function）
@@ -115,7 +115,7 @@ var rbb = function () {
   * 参数：cid 视频的cid（Number）
   * 在一些情况导致替换了当前页面的播放器后，可能会反复调用该回调函数
 
-## getCid ##
+### getCid ###
 
 * 通过aid和pid获取cid
 * 参数：id 一个包括aid（articlecid，av号）和pid（pageid）的对象，
@@ -133,14 +133,14 @@ var rbb = function () {
 说明：如果只需要一个分页请勿将pid留空，可以有更大的几率获取到cid。如果只需要当前视频的cid，请使用cid接口。
 
 
-## replaced ##
+### replaced ###
 
 * 注册发生替换播放器事件时的回调函数
 * 参数：callback 替换播放器时回调（Function）
   * 参数：true 表示事件已经被注册
   * 参数：cid 播放器被替换时调用，参数是视频的cid（Number）
 
-## added ##
+### added ###
 
 * 注册添加评论等相关信息时的回调函数
 * 参数：callback 替换播放器时回调（Function）
