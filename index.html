@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-cn">
 <head>
   <meta charset="utf-8" />
@@ -12,7 +12,7 @@
     #main-body { width: 960px; margin: 0 auto; }
     h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0; font-size: 100%; font-weight: normal; }
     a, a:hover, a:active, a:visited { text-decoration: none; color: #f25d8e; outline: none; }
-    a image { border: none; }
+    a img { border: none; }
     h1 { color:#D95E7F; font-size: 40px; line-height: 60px; margin: 40px 0 20px 0; padding: 0; font-weight: bold; }
     header { display: block; height: 200px; }
     header li { list-style: none; }
@@ -179,7 +179,7 @@
   </div>
   <h3>脚本权限及用户隐私声明</h3>
   <div class="in">
-    <div class="p">脚本使用了GreaseMonkey中的<code>GM_xmlhttpRequest</code>、<code>GM_getValue</code>、<code>GM_setValue</code>、<code>GM_deleteValue</code>、<code>GM_addStyle</code>、<code>unsafeWindow</code>接口。</div>
+    <div class="p">脚本使用了GreaseMonkey中的<code>GM_xmlhttpRequest</code>、 <code>GM_getValue</code>、 <code>GM_setValue</code>、 <code>GM_deleteValue</code>、 <code>GM_addStyle</code>、 <code>unsafeWindow</code>接口。</div>
     <div class="p">
       脚本使用<code>GM_xmlhttpRequest</code>用于网络访问，脚本进行的网络访问限于下列域名：<ul>
         <li>www.<span></span>bilibili.<span></span>tv</li>
@@ -193,7 +193,7 @@
       这些域名都是bilibili.tv站点的相关域名。<br />
       此外在长按链接弹出菜单时，脚本还会访问对应链接指向的页面。
     </div>
-    <div class="p">脚本使用了<code>GM_getValue </code>、<code>GM_setValue</code>和<code>GM_deleteValue</code>用于本地存储，脚本在本地存储了：从网络上获取的cid和aid的对应关系。脚本缓存的数据仅供脚本自己使用，不会发送到网络上，本脚本、其他浏览器插件和用户有权限读取这些信息。</div>
+    <div class="p">脚本使用了<code>GM_getValue </code>、 <code>GM_setValue</code>和<code>GM_deleteValue</code>用于本地存储，脚本在本地存储了：从网络上获取的cid和aid的对应关系。脚本缓存的数据仅供脚本自己使用，不会发送到网络上，本脚本、其他浏览器插件和用户有权限读取这些信息。</div>
     <div class="p">脚本使用了<code>GM_addStyle</code>用于向页面添加自定义的样式。</div>
     <div class="p">
       脚本使用了<code>unsafeWindow</code>用于一些对网页进行直接操作的功能，脚本使用该接口：<ul>
@@ -202,6 +202,17 @@
       </ul>
     </div>
   </div>
+
+  <h3>更新历史</h3>
+  <div class="in">
+    <ul>
+      <li>2.24 ：长按鼠标菜单显示专题链接</li>
+      <li>2.23 ：长按选择播放位置的菜单中共享弹幕池的若干分页只显示最后一个分页</li>
+      <li>2.22 ：将脚本迁移到github</li>
+      <li>之前的版本请到 http://userscripts.org/scripts/show/176946 查看</li>
+    </ul>
+  </div>
+
 
   <h3>关于</h3>
   <div class="in">

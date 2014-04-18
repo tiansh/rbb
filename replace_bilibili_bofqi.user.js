@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.23
+// @version     2.24
 // @updateURL   http://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL http://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -24,121 +24,15 @@ Replace bilibili bofqi
 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 
 
-【简而言之】
-
-  这是一个恢复B站原本的播放器的脚本，与其他同类脚本的主要区别：
-    * 不会访问第三方的服务器，保障隐私安全；
-    * 检查是否替换后可以正常播放后自动替换；
-    * 可以处理直接跳转到外站的视频（长按链接即可）。
-
-
-【详细说明】
-
-  对于新番区一些不是原生播放器的视频，脚本会自动查找对应的原生播放器是否可用，若找到且确认可用会自动替换播放器。
-  脚本中“检查加载视频地址…”一步的主要工作是检查替换播放器后是否可以正常播放。如果无视检查强制替换，可能会显示的“非常抱歉”的错误提示。
-  但检查工作视网速和服务器速度而定，会需要一些时间，如果确定可以播放可以跳过检查。
-  检查后如果还出现“非常抱歉”的提示，一般是因为网络不稳定造成的，可以刷新页面解决此问题。
-  如果显示“视频不允许在您当前所在地区播放”，可以尝试使用海外代理将 http://interface.bilibili.cn/playurl?* 加入到代理列表中。
-  如果原播放器左下角显示“加载视频地址成功”，则说明替换播放器成功，此时如果长时间显示小电视，一般是视频源的问题。
-  如果提示视频源为“爱奇艺”，一般来说是不能正常替换的，大多数情况下只要等几个小时到一天就会换到其他的视频源。
-  如果显示获取了cid，但是检查是否可以播放时“（网络访问出错）”，可以尝试使用强制替换按钮替换。如果替换无效再换回来就好了，由于强制替换时外站播放器还在页面上，所以广告不会被重新加载。
-  如果对所有视频都显示出错信息可能是脚本失效，请检查更新或禁用脚本。如果部分视频失效可能是该视频无法使用原生播放器。
-
-  对于点击后会自动跳转到外站的视频，在点击链接时按住鼠标左键（大约一秒，由于网速不同可能不同），会出现一个选择在哪里收看的下拉菜单。
-  在菜单中选择“生成网页”或“仅播放器”（没有评论等相关信息）即可直接打开播放器页面。
-  如果出现错误会在菜单顶部中给出错误信息，对于网络访问出错等情况，提供的第一个链接可能可以正常播放；但很有时候会出现“非常抱歉”的错误提示。
-  如果需要在除bilibili.tv以外的站点打开此功能，可通过自定义脚本的作用范围实现。
-  对于在本站的视频，该菜单亦可用来选择分页。
-
-  对于一些没有权限收看的视频（一般是因为视频审核不通过），本脚本会试图通过相邻的av对应的视频地址推算当前视频的地址。
-  由于技术限制，这个推算很可能是不准确的，可能会有显示了错误的视频或者漏掉了一些分页的情况（一般不会发生多的情况）。
-  这一功能一般不太稳定，如果失败可以尝试刷新两次。
-  由于这个脚本没有访问任何第三方服务器，所以这一功能仅为不准确地推断视频地址，不推荐长期用本脚本作为越过登录检查的工具。
-
-
-【浏览器兼容性】
-
-  本脚本可以在以下浏览器上运行：
-    * Firefox浏览器 + GreaseMonkey附加组件
-    * Chrome浏览器 + TamperMonkey扩展程序
-    * Opera浏览器 +　Violent monkey扩展
-  推荐使用火狐浏览器以达到最好的效果。
-
-
-【脚本实现】
-
-  使用API访问进行操作，通过playurl页面检查替换播放器后是否会出现错误信息。
-
-
-【脚本权限及用户隐私声明】
-
-  脚本使用了 GM_xmlhttpRequest、GM_getValue、GM_setValue、GM_deleteValue、GM_addStyle、unsafeWindow 权限。
-  GM_xmlhttpRequest 用于网络访问，脚本进行的网络访问限于下列域名：
-   * www.bilibili.tv
-   * bilibili.kankanews.com
-   * secure.bilibili.tv
-   * static-s.bilibili.tv
-   * api.bilibili.cn
-   * interface.bilibili.cn
-   * static.hdslb.com
-  这些域名都是bilibili.tv站点的相关域名。
-  此外在长按链接弹出菜单时，脚本还会访问对应链接指向的页面。
-
-  GM_getValue 、 GM_setValue 和 GM_deleteValue 用于本地存储，脚本在本地存储了：
-   * 从网络上获取的cid和aid的对应关系
-  脚本缓存的数据仅供脚本自己使用，不会发送到网络上，本脚本、其他浏览器插件和用户有权限读取这些信息。
-
-  unsafeWindow 用于一些对网页进行直接操作的功能，脚本使用该接口：
-   * 显示提示信息
-
-  GM_addStyle 用于向页面添加自定义的样式。脚本添加样式以：
-   * 支持脚本生成的页面
+项目主页： http://tiansh.github.io/rbb/
 
 
 【历史版本】
 
+   * 2.24 ：长按鼠标菜单显示专题链接
    * 2.23 ：长按选择播放位置的菜单中共享弹幕池的若干分页只显示最后一个分页
    * 2.22 ：将脚本迁移到github
-   * 2.21 ：修复Chrome和Opera下不能开启打印调试信息的问题，更新include规则
-   * 2.20 ：通过unsafeWindow暴露给其他脚本的一些接口，由于原网站开始使用hash作为参数故停止对hash的修改
-   * 2.19 ：支持新的自动换分页
-   * 2.18 ：分页信息显示，设置缓存上限，不确定有用没用总之先加上对bilibili.cn域名的页面识别
-   * 2.17 ：改进根据相邻视频推断cid的算法，少量代码重构
-   * 2.16 ：显示视频源
-   * 2.15 ：错误修正
-   * 2.14 ：更改消息框位置
-   * 2.13 ：修理长按菜单小错误，分页选择更新样式，兼容Chrome/Opera上使用的Stylish，支持专题中的链接，改进无权限视频查找
-   * 2.12 ：更新长按鼠标时对多分页视频的显示，长按鼠标菜单添加选分页功能，修复强制替换播放器功能某些情况下会导致Flash被重新加载
-   * 2.11 ：更新对直播视频的识别，修复强制替换时不同播放器的显示，允许不替换播放器
-   * 2.10 ：修复替换播放器后显示全部分页，修复生成页面的网面全屏和浮动播放器，生成的页面支持多分页，更新长按菜单样式，添加强制替换功能
-   * 2.9  ：更新了对分页的处理，重构了部分代码修正一些错误
-   * 2.8  ：对于无权限浏览的视频，找不到播放器的时候，也显示评论和标题信息
-   * 2.7  ：使用生成页面的方式优化添加视频页面的显示，恢复通过html5视频链接获取cid方法
-   * 2.6  ：可以用换分页解决问题的，用换分页来解决，不替换播放器（影响速度，2.9取消）
-   * 2.5  ：不替换直播的播放器
-   * 2.4  ：在生成的页面上支持收藏、添加标签、添加评论等功能
-   * 2.3  ：更新并增加了一些API来源，“尝试”兼容Opera浏览器，尝试通过生成的页面解决直接跳转外站的视频
-   * 2.2  ：修理对space.bilibili.tv域名的兼容性问题 
-   * 2.1  ：修理对bilibili.kankanews.com域名的兼容性问题 
-   * 2.0  ：重构了代码，对错误信息、通过相邻视频推测视频地址、API和interface的调用等方便进行了改进，增加了本地缓存
-   * 1.13 ：支持bilibili.kankanews.com域名
-   * 1.12 ：替换后的视频支持新的浮动播放框
-   * 1.11 ：支持多分页视频，因为html5播放器链接和弹幕下载链接长期失效，现已禁用
-   * 1.10 ：拖拽链接时不出现选框；处理网(hui)站(yuan)抽(de)风(shi)时(jie)界面变回131111前的情况的页面
-   * 1.9  ：把链接改为了原来的链接，我也不知道他们为啥又用这个了。再有就是修正了一下提示信息的位置
-   * 1.8  ：添加11月11日新上线的客户端的passKey备用。调整获取Cid顺序，降低弹幕下载页面优先级（因为该页面经常崩溃）
-   * 1.7  ：B站界面改版，代码随之进行了一些调整，保持风格与网站一致，保持网页全屏功能正常
-   * 1.6  ：更新视频播放器的iframe的html为B站当前新的代码，提高兼容性
-   * 1.5  ：重写了对网络访问超时的判定，提高对网速过慢情况的兼容性，尤其是一些经过第三方中转的网络访问
-   * 1.4  ：添加对获取cid的页面响应超时的处理。最近B站经常会各种卡死……
-   * 1.3  ：更新全屏修正一段的代码，支持新的播放器地址
-   * 1.2  ：默认使用新的播放器地址，不对天国的Flash游戏分区的视频进行替换
-   * 1.1  ：添加长按菜单无法在B站观看时的出错信息，添加对形如acg.tv/avXXX链接的支持
-   * 1.0  ：增加对跳转到外站的视频的支持（详见说明）,完成所有基本功能，所以版本号改到1.0～
-   * 0.4  ：稍微改了改通过临近视频的cid推断cid的算法，效果比原来好了一点的样子～
-   * 0.3  ：错误修正
-   * 0.2  ：添加了通过相邻av号查找cid的功能，可用于未审核或仅限会员的视频。识别新的播放器地址。
-   * 0.1  ：初始版本
+   * 之前的版本请到 http://userscripts.org/scripts/show/176946 查看
 
 
 【关于】
@@ -248,6 +142,7 @@ var cosmos = function () {
         'swf': '仅播放器',
         'origen': '原始页面',
         'chose': '选择分页',
+        'sp': '专题页',
       },
       'succ': {
         'replace': '已成功替换播放器，若无法正常播放请刷新页面或禁用替换。视频源：{source}。(cid:{cid})',
@@ -304,15 +199,21 @@ var cosmos = function () {
           '<script type="text/javascript" src="http://static.hdslb.com/js/page.player_error.js"></script>',
         ].join('');
       },
-      'menu': function (items) {
-        return ['<div class="rbb-menu">',
+      'menu': function (items, sp) {
+        if (sp) items.unshift({
+          'href': sp.href,
+          'title': bilibili.text.menu.sp,
+        });
+        return ['<div class="rbb-menu', (sp ? ' rbb-menu-with-sp' : ''), '">',
           '<div class="rbb-menu-title">',
             '<span class="rbb-menu-message"></span>',
           '</div>',
           items.map(function genMenuItem(item, i) {
+            var spt = '';
+            if (sp && i === 0) spt = '<span class="rbb-menu-sp-logo"></span>';
             return ['<div class="rbb-menu-item">',
               (item.href ? ['<a class="rbb-menu-link" href="', xmlEscape(item.href), '" target="_blank">',
-                xmlEscape(item.title),
+                spt, xmlEscape(item.title),
               '</a>'].join('') :
               ['<span>', xmlEscape(item.title), '</span>'].join('')),
               (item.submenu ? ['<div class="rbb-submenu">',
@@ -322,15 +223,20 @@ var cosmos = function () {
           }).join(''),
         '</div>'].join('');
       },
-      'menu2': function (menu) {
-        var menuLink = function (href, title) {
+      'menu2': function (menu, sp) {
+        var menuLink = function (href, title, sp) {
+          if (!sp) sp = '';
+          else sp = '<span class="bsp-menu-sp-logo"></span>';
           return [
           '<a href="', href, '" target="_blank" class="bsp-menu-link">',
-            '<span class="bsp-menu-bg" >', title, '</span>',
-            '<span class="bsp-menu-fg" >', title, '</span>',
+            '<span class="bsp-menu-bg" >', sp, xmlEscape(title), '</span>',
+            '<span class="bsp-menu-fg" >', sp, xmlEscape(title), '</span>',
           '</a>'].join('');
         };
-        return ['<div class="bsp-menu" style="width: 0; height: 0;">',
+        return ['<div class="bsp-menu', (sp ? ' bsp-menu-with-sp' : ''),'" style="width: 0; height: 0;">',
+          (sp ? (['<div class="bsp-menu-sp">',
+              menuLink(sp.href, sp.title, true),
+            '</div>'].join('')) : ''),
           '<div class="bsp-menu-title">', menuLink(menu.href, menu.title), '</div>',
           menu.submenu.map(function (item) {
             return ['<div class="bsp-menu-item">',
@@ -842,7 +748,7 @@ var cosmos = function () {
     return { 'get': get, 'put': put };
   };
   var videoInfo = infoCache(), playurlInfo = infoCache();
-  var pageInfo = infoCache();
+  var pageInfo = infoCache(), spInfo = infoCache();
 
   // 获取视频源名称
   var getVideoSource = function (id, cid) {
@@ -1330,12 +1236,14 @@ var cosmos = function () {
     var pa = {};
     var pids = Object.keys(cids).map(Number).sort(function (x, y) { return x - y; });
     pids.forEach(function (pid) {
-      var a = alist.querySelector('a[cid="' + cids[pid] + '"]'); if (a) return;
-      a = document.createElement('a'); a.setAttribute('cid', cids[pid]);
+      var a = alist.querySelector('a[cid="' + cids[pid] + '"]');
+      if (!a) {
+        a = document.createElement('a'); a.setAttribute('cid', cids[pid]);
+        alist.appendChild(a);
+      }
       if (pages && pages[pid]) a.innerHTML = xmlEscape(pages[pid]);
       else a.innerHTML = xmlEscape(pid + bilibili.text.split.pid + '(cid=' + cids[pid] + ')');
       a.href = genURL(bilibili.url.video, { 'host': bilibili.host, 'aid': aid, 'pid': pid });
-      alist.appendChild(a);
       return pa[pid] = a;
     });
     var showPage = function (pid) {
@@ -1596,13 +1504,17 @@ var cosmos = function () {
   // 选项菜单
   var choseMenu = (function () {
     // 显示菜单
-    var show = function (menu, position) {
+    var show = function (menu, position, sp) {
       menuContainer().appendChild(menu);
+      var isRbb = menu.className.split(' ').indexOf('rbb-menu') !== -1;
+      var dx = 0, dy = 0;
+      if (isRbb && sp) dx = -144;
+      if (!isRbb && sp) dy = -32;
       if (menu.clientWidth + position.x > document.body.clientWidth) {
-        menu.style.right = (document.body.clientWidth - position.x - 8) + 'px';
+        menu.style.right = (document.body.clientWidth - position.x - 8 + dx) + 'px';
         menu.className += ' rbb-float-right'
-      } else menu.style.left = (position.x - 8) + 'px';
-      menu.style.top = (position.y - 6) + 'px';
+      } else menu.style.left = (position.x - 8 + dx) + 'px';
+      menu.style.top = (position.y - 6 + dy) + 'px';
       return menu;
     };
     // 隐藏菜单
@@ -1615,20 +1527,20 @@ var cosmos = function () {
       return false;
     };
     // 创建菜单
-    var create = function (items) {
+    var create = function (items, sp) {
       var menu = document.createElement('div');
       var bsp = items.length === 1;
-      if (bsp) menu.innerHTML = bilibili.html.menu2(items[0]);
-      else menu.innerHTML = bilibili.html.menu(items);
+      if (bsp) menu.innerHTML = bilibili.html.menu2(items[0], sp);
+      else menu.innerHTML = bilibili.html.menu(items, sp);
       menu = menu.firstChild;
       if (bsp) initMenuDom(menu);
       return menu;
     };
-    return function (items, position) {
-      debug('New menu displayed: %o', items);
+    return function (items, sp, position) {
+      debug('New menu displayed: %o, %o', items, sp);
       var displayTime = new Date();
-      var menu = create(items);
-      show(menu, position);
+      var menu = create(items, sp);
+      show(menu, position, sp);
       var menuHidden = function (event) {
         // 如果点击事件发生在菜单内则不隐藏菜单
         if (contains(menu, event.target)) return;
@@ -1656,8 +1568,9 @@ var cosmos = function () {
 
   // 从页面中获取分页名称等相关信息
   var getPageInfo = function (aid, html) {
+    var doc;
     try {
-      var doc = new DOMParser().parseFromString(html, 'text/html')
+      doc = new DOMParser().parseFromString(html, 'text/html')
       var pages = doc.querySelectorAll('#dedepagetitles option');
       var nodedata = Array.apply(Array, pages).map(function (opt) {
         return [opt.innerHTML, opt.value];
@@ -1669,7 +1582,14 @@ var cosmos = function () {
           'nodedata': nodedata,
         })
       }
-    } catch (e) { }
+    } catch (e1) { }
+    try {
+      var spo = doc.querySelector('.v_bgm_list .info .detail a');
+      if (spo) {
+        var sp = { 'title': spo.textContent, 'href': spo.href };
+        spInfo.put(aid, sp);
+      }
+    } catch (e2) { }
   };
 
   // 对某个视频显示选项菜单
@@ -1720,7 +1640,7 @@ var cosmos = function () {
       }
       var pids = Object.keys(rbb.cids).map(Number)
         .sort(function (x, y) { return x - y; });
-      pids = pids.filter(function (pid, i) {
+      if (cids) pids = pids.filter(function (pid, i) {
         for (i++; i < pids.length; i++)
           if (cids[pid] === cids[pids[i]]) return false;
         return true;
@@ -1773,7 +1693,9 @@ var cosmos = function () {
           (menuItems[0].submenu ? bilibili.text.menu.chose : bilibili.text.menu.origen);
         menuItems[0].submenu = menuItems[0].submenu || [];
       }
-      return menu = choseMenu(menuItems, position);
+      // 专题
+      var sp = spInfo.get(id.aid) || undefined;
+      return menu = choseMenu(menuItems, sp, position);
     };
     var updateMenu = function (cids, errormsg, inSite, isOrigen) {
       if (!menu) initMenu(cids, inSite, isOrigen);
@@ -2105,6 +2027,15 @@ else setTimeout(cosmos, 0);
     '}',
     '#rbb-menu-container .rbb-menu .rbb-submenu .rbb-menu-item { white-space: nowrap; width: 100%; }',
     '#rbb-menu-container .rbb-menu .rbb-menu-item.rbb-menu-suggest { float: none; width: 100%; }',
+    '#rbb-menu-container .rbb-menu .rbb-menu-link .rbb-menu-sp-logo {',
+      'background-image: url("http://static.hdslb.com/images/v2images/icons_home.png");',
+      'background-position: 5px -627px;',
+      'display: inline-block;',
+      'height: 16px;',
+      'margin: -6px 0;',
+      'padding: 4px;',
+      'width: 16px;',
+    '}',
      // bsp-menu
     '#bsp-menu-container { display: none !important; }',
     '#rbb-menu-container .bsp-menu {',
@@ -2160,6 +2091,17 @@ else setTimeout(cosmos, 0);
     '#rbb-menu-container .bsp-menu .bsp-menu-link:hover .bsp-menu-bg { color: #f25d8e; }',
     '#rbb-menu-container .bsp-menu .bsp-menu-link span.bsp-menu-fg, ',
     '#rbb-menu-container .bsp-menu .bsp-menu-link a.bsp-menu-fg:hover { color: transparent; }',
+    '#rbb-menu-container .bsp-menu.bsp-menu-with-sp { padding-top: 32px;}',
+    '#rbb-menu-container .bsp-menu .bsp-menu-sp { position: absolute; top: 0; text-align: center; width: 100%; }',
+    '#rbb-menu-container .bsp-menu .bsp-menu-link .bsp-menu-sp-logo {',
+      'background-image: url("http://static.hdslb.com/images/v2images/icons_home.png");',
+      'background-position: 5px -627px;',
+      'display: inline-block;',
+      'height: 16px;',
+      'margin: -6px 0;',
+      'padding: 4px;',
+      'width: 16px;',
+    '}',
     // rbb-message
     '#rbb-message { position: absolute; left: calc((100% - 980px) / 2); }',
     '.widescreen~#rbb-message { left: calc((100% - 1170px) / 2); }',
@@ -2174,4 +2116,3 @@ else setTimeout(cosmos, 0);
     '}',
   ].join(''));
 }());
-
