@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.24
+// @version     2.25
 // @updateURL   http://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL http://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -29,6 +29,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.25 ：修理Chrome/Oprea下显示专题链接的问题
    * 2.24 ：长按鼠标菜单显示专题链接
    * 2.23 ：长按选择播放位置的菜单中共享弹幕池的若干分页只显示最后一个分页
    * 2.22 ：将脚本迁移到github
@@ -203,17 +204,17 @@ var cosmos = function () {
         if (sp) items.unshift({
           'href': sp.href,
           'title': bilibili.text.menu.sp,
+          'sp': true,
         });
         return ['<div class="rbb-menu', (sp ? ' rbb-menu-with-sp' : ''), '">',
           '<div class="rbb-menu-title">',
             '<span class="rbb-menu-message"></span>',
           '</div>',
           items.map(function genMenuItem(item, i) {
-            var spt = '';
-            if (sp && i === 0) spt = '<span class="rbb-menu-sp-logo"></span>';
             return ['<div class="rbb-menu-item">',
               (item.href ? ['<a class="rbb-menu-link" href="', xmlEscape(item.href), '" target="_blank">',
-                spt, xmlEscape(item.title),
+                (item.sp ? '<span class="rbb-menu-sp-logo"></span>' : ''),
+                xmlEscape(item.title),
               '</a>'].join('') :
               ['<span>', xmlEscape(item.title), '</span>'].join('')),
               (item.submenu ? ['<div class="rbb-submenu">',
@@ -1586,7 +1587,10 @@ var cosmos = function () {
     try {
       var spo = doc.querySelector('.v_bgm_list .info .detail a');
       if (spo) {
-        var sp = { 'title': spo.textContent, 'href': spo.href };
+        var sp = {
+          'title': spo.textContent,
+          'href': spo.getAttribute('href'), // 为什么Chrome不能直接“.href”？？
+        };
         spInfo.put(aid, sp);
       }
     } catch (e2) { }
@@ -2116,3 +2120,4 @@ else setTimeout(cosmos, 0);
     '}',
   ].join(''));
 }());
+
