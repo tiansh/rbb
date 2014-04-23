@@ -4,9 +4,9 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.25
-// @updateURL   http://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
-// @downloadURL http://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
+// @version     2.26
+// @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
+// @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
 // @grant       GM_getValue
 // @grant       GM_setValue
@@ -24,11 +24,12 @@ Replace bilibili bofqi
 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 
 
-项目主页： http://tiansh.github.io/rbb/
+项目主页： https://tiansh.github.io/rbb/
 
 
 【历史版本】
 
+   * 2.26 ：调整样式，增强Chrome/Oprea在用户空间页面的兼容性
    * 2.25 ：修理Chrome/Oprea下显示专题链接的问题
    * 2.24 ：长按鼠标菜单显示专题链接
    * 2.23 ：长按选择播放位置的菜单中共享弹幕池的若干分页只显示最后一个分页
@@ -1509,7 +1510,7 @@ var cosmos = function () {
       menuContainer().appendChild(menu);
       var isRbb = menu.className.split(' ').indexOf('rbb-menu') !== -1;
       var dx = 0, dy = 0;
-      if (isRbb && sp) dx = -144;
+      if (isRbb && sp) dx = -120;
       if (!isRbb && sp) dy = -32;
       if (menu.clientWidth + position.x > document.body.clientWidth) {
         menu.style.right = (document.body.clientWidth - position.x - 8 + dx) + 'px';
@@ -1988,7 +1989,7 @@ else setTimeout(cosmos, 0);
 (function addStyle() {
   GM_addStyle([
     // rbb-menu
-    '#rbb-menu-container, #rbb-menu-container * { all: unset; }',
+    '#rbb-menu-container, #rbb-menu-container * { all: unset; margin: 0; padding: 0; top: auto; left: auto; right: auto; bottom: auto; position: static; }',
     '#rbb-menu-container .rbb-menu { ',
       'font-size: 16px; text-align: center; ',
       'border: 4px solid rgba(204, 204, 204, 0.5); border-radius: 4px; ',
@@ -2005,7 +2006,7 @@ else setTimeout(cosmos, 0);
     '#rbb-menu-container .rbb-menu a { cursor: pointer; }',
     '#rbb-menu-container .rbb-menu a:hover { color: #f25d8e; }',
     '#rbb-menu-container .rbb-menu .rbb-menu-title { height: 32px; width: 100%; }',
-    '#rbb-menu-container .rbb-menu .rbb-menu-item { height: 32px; width: 144px; float: left; }',
+    '#rbb-menu-container .rbb-menu .rbb-menu-item { height: 32px; width: 120px; float: left; }',
     '#rbb-menu-container .rbb-menu.rbb-float-right .rbb-menu-item { float: right; }',
     '#rbb-menu-container .rbb-submenu .rbb-menu-item { float: none; }',
     '#rbb-menu-container .rbb-menu .rbb-menu-item .rbb-submenu { ',
