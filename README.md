@@ -76,6 +76,18 @@ flash参数中"cid"或"\*-cid"可以提供cid
 
 请参考：http://static.hdslb.com/js/page.arc.js
 
+
+## 获取新番专题相关内容 ##
+
+参考：<br />
+<code>http://api.bilibili.cn/spview?spid={spid}&season\_id={season\_id}&bangumi=1</code><br />
+<code>http://api.bilibili.tv/sp?spid={spid}</code>
+
+spview中的bangumi参数为0/1用于区分是所属番剧还是相关视频。
+
+这两个API似乎不需要appkey的样子……
+
+
 ## 脚本接口 ##
 
 其他脚本使用本脚本接口的方法

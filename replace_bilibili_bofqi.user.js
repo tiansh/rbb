@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.26
+// @version     2.27
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -29,6 +29,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.27 ：生成页面增加显示番剧信息，修复生成页面长按鼠标菜单的相关问题
    * 2.26 ：调整样式，增强Chrome/Oprea在用户空间页面的兼容性
    * 2.25 ：修理Chrome/Oprea下显示专题链接的问题
    * 2.24 ：长按鼠标菜单显示专题链接
@@ -94,6 +95,10 @@ var cosmos = function () {
         'http://static.hdslb.com/live-play.swf',
       ],
       'bflash': 'https://static-s.bilibili.tv/play.swf?cid={cid}&aid={aid}',
+      'sp': {
+        'spview': 'http://api.bilibili.cn/spview?spid={spid}&season_id={season_id}&bangumi=1',
+        'spid': 'http://api.bilibili.tv/sp?spid={spid}',
+      },
       'view': [
         { // 网页Flash播放器的passkey （batch参数是额外加上去的）
           'url': 'http://api.bilibili.cn/view?type=json&id={aid}&batch=1&appkey=8e9fc618fbd41e28',
@@ -292,6 +297,9 @@ var cosmos = function () {
             '<img src="https://secure.bilibili.tv/images/grey.gif" id="img_ErrCheck" style="display:none" />',
             '<script type="text/javascript" src="http://static.hdslb.com/js/page.player_error.js"></script>',
           '</div>',
+          // 新番专题信息
+          '<div class="v_bgm_list" style="">',
+          '</div>',
           // 标签和描述
           '<div class="s_center">',
             '<div class="s_div">',
@@ -322,10 +330,33 @@ var cosmos = function () {
           '</div>',
         '</div>',
         // 更新页面上的标签信息
-        '<script>var aid=\'{aid}\', mid=\'{mid}\'; $(function () {<} kwtags({kwtags},[]); {>});</script>',
+        '<script>',
+          'var aid=\'{aid}\', mid=\'{mid}\', spid=0;',
+          'var isSpAtt="0", isSpFav="0";',
+          '$(function () {<}',
+            'kwtags({kwtags},[]);',
+            'spid={spid}',
+          '{>});',
+        '</script>',
         '</body>',
         '</html>',
       ].join('\n'),
+      'v_bgm_list': [
+        '<div class="video">',
+          '<div class="sort"><i>分集列表</i><ul id="v_bgm_list_tab" class="swc"></ul></div>',
+          '<div id="v_bgm_list_page"></div>',
+          '<div id="v_bgm_list_data"></div>',
+          '<div id="v_bgm_list_toggle"><span class="autoheight">查看更多</span></div>',
+        '</div>',
+        '<div class="info">',
+          '<img src="{spcover}" />',
+          '<div class="detail">',
+            '<a class="t" href="{spurl}" target="_blank">{sptitle}</a>',
+            '<div class="i">总<b>{bangumi}</b>话 相关视频<b>{relative}</b>个</div>',
+            '<div id="sp_dingyue"><p class="dy" onclick="subscribeSp(this,spid)">订阅</p></div>',
+          '</div>',
+        '</div>',
+      ].join(''),
     },
     'js': {
       'page': 'http://static.hdslb.com/js/page.arc.js',
@@ -418,7 +449,7 @@ var cosmos = function () {
   }());
   var genURL = function (url) {
     var datas = Array.apply(Array, arguments).slice(1).concat(bilibili);
-    return genStr(url, escape, datas);
+    return genStr(url, encodeURIComponent, datas);
   };
   var genXML = function (xml) {
     var datas = [{ '<': '{', '>': '}' }]
@@ -450,7 +481,7 @@ var cosmos = function () {
     // 向地址的本地参数中设置参数
     var set = function (key, val, a) {
       var f = false;
-      var str = key + '=' + escape(val);
+      var str = key + '=' + encodeURIComponent(val);
       if (typeof a === 'string') a = href2A(a);
       var hash = ((a || location).hash || '#').slice(1).split('&').map(function (kv) {
         var arg = kv.match(/^([^=]*)=(.*)$/);
@@ -469,7 +500,7 @@ var cosmos = function () {
       ((a || location).hash || '#').slice(1).split('&').forEach(function (kv) {
         var arg = kv.match(/^([^=]*)=(.*)$/);
         if (!arg || !arg[2] || arg[1] != key) return kv;
-        val = unescape(arg[2]);
+        val = decodeURIComponent(arg[2]);
       });
       return val;
     };
@@ -1188,6 +1219,7 @@ var cosmos = function () {
       }
     };
     ret.handler = function () { };
+    ret.handler.update = function () { };
     ret.gotCid = function (cid) {
       if (typeof cid !== 'number') return;
       currentCid = cid;
@@ -1617,6 +1649,8 @@ var cosmos = function () {
         'author': info.author || '',
         'tag': (info.tag || '').split(','),
         'title': info.title || page.title || a.textContent || '',
+        'spid': info.spid || 0,
+        'season_id': info.season_id || 0,
       };
       if (info.list) {
         Object.keys(info.list).map(function (i) {
@@ -1750,7 +1784,7 @@ var cosmos = function () {
   };
 
   // 按住鼠标时进行处理
-  var holdMouse = (function () {
+  var holdMouse = function () {
     if (!document.body) return;
     var lastPosition;
     document.body.addEventListener('mousedown', function (event) {
@@ -1789,7 +1823,8 @@ var cosmos = function () {
         actions.forEach(function (e) { a.removeEventListener(e, mh); });
       }, bilibili.timeout.press);
     });
-  }());
+  };
+  holdMouse();
 
   // 替换整个文档树
   var replaceDocument = function (doc, scriptLoaded) {
@@ -1813,7 +1848,78 @@ var cosmos = function () {
       s.addEventListener('load', checkLoad);
       document.querySelector('head').appendChild(s);
     });
+    holdMouse();
+    addStyle();
     return ret;
+  };
+
+  // 显示新番相关信息（用于生成的页面）
+  var showBgmInfo = function (id) {
+    var done = 0, spInfo = null, bgmInfo = null;
+    var doneCallback = null, errorCallback;
+    var sp = {'spid': id.spid, 'season_id': id.season_id};
+
+    var error = function () {
+      if (done < 0) return; done = -1;
+      errorCallback();
+    };
+
+    var parse = function (resp) {
+      var data;
+      try {
+        data = JSON.parse(resp.responseText);
+        if (!data.count) throw '';
+        if (done >= 0) done++;
+        return data;
+      } catch (e) { error(); }
+      return null;
+    };
+
+    var load = function () {
+      if (done === 3) doneCallback();
+    };
+
+    var getSpInfo = function () {
+      GM_xmlhttpRequest({
+        'method': 'GET',
+        'url': genURL(bilibili.url.sp.spid, sp),
+        'onload': function (resp) { load(spInfo = parse(resp));  },
+        'onerror': error,
+      });
+    };
+
+    var getBgmInfo = function () {
+      GM_xmlhttpRequest({
+        'method': 'GET',
+        'url': genURL(bilibili.url.sp.spview, sp),
+        'onload': function (resp) { load(bgmInfo = parse(resp)); },
+        'onerror': error,
+      });
+    };
+
+    doneCallback = function () {
+      var v_bgm_list = document.querySelector('.v_bgm_list');
+      v_bgm_list.innerHTML = genXML(bilibili.html.v_bgm_list, {
+        'spcover': spInfo.cover,
+        'sptitle': spInfo.title,
+        'spurl': '/sp/' + encodeURIComponent(spInfo.title),
+        'bangumi': bgmInfo.count,
+        'relative': spInfo.count - bgmInfo.count,
+      })
+      new unsafeWindow.bbBangumiSp(id.aid, sp.spid, 0, encodeURIComponent(spInfo.title));
+    };
+
+    errorCallback = function () { };
+
+    getBgmInfo();
+    getSpInfo();
+
+    var scriptLoaded = false;
+    return function () {
+      if (!scriptLoaded && done >= 0) load(++done);
+      scriptLoaded = true;
+    };
+
   };
 
   // 使用av1/index_1.html作为显示生成的页面的临时页面
@@ -1829,8 +1935,9 @@ var cosmos = function () {
         'kwtags': rbb.tag.join(','),
         'title': xmlEscape(rbb.title),
       });
+      var callback = function () { };
       var doc = new DOMParser().parseFromString(content, 'text/html')
-      var old = replaceDocument(doc);
+      var old = replaceDocument(doc, function () { callback(); });
       var getNode = function (qs) {
         var obj = old.querySelector(qs);
         return obj.parentNode.removeChild(obj);
@@ -1843,12 +1950,24 @@ var cosmos = function () {
         z.parentNode.appendChild(obj);
       });
       window.addEventListener('load', function () {
+        var i, o;
         document.querySelector('.tag').innerHTML = '';
         unsafeWindow.aid = String(rbb.aid);
         unsafeWindow.mid = String(rbb.mid);
-        unsafeWindow.kwtags(rbb.tag, []);
+        unsafeWindow.spid = Number(rbb.spid);
+        try { unsafeWindow.kwtags(rbb.tag, []); } catch (e1) { }
+        unsafeWindow.isSpAtt = unsafeWindow.isSpFav = "0";
+        if (unsafeWindow.AttentionList) {
+          for (i in unsafeWindow.AttentionList) {
+            o = unsafeWindow.AttentionList[i];
+            if ((o < 0) && (o * -1) == rbb.spid)
+              unsafeWindow.isSpAtt = unsafeWindow.isSpFav = "1";
+          }
+        }
+        try { unsafeWindow.showSpAdbtn(); } catch (e2) { }
       });
       addPages(rbb.aid, rbb.cids, rbb.pages, rbb.pid || Object.keys(rbb.pages)[0]);
+      if (rbb.spid) callback = showBgmInfo(rbb);
     } catch (e) { }
     GM_addStyle('html { display: block !important; }')
   }());
@@ -1986,7 +2105,7 @@ var cosmos = function () {
 if (!document.body) document.addEventListener('DOMContentLoaded', cosmos);
 else setTimeout(cosmos, 0);
 
-(function addStyle() {
+var addStyle = function () {
   GM_addStyle([
     // rbb-menu
     '#rbb-menu-container, #rbb-menu-container * { all: unset; margin: 0; padding: 0; top: auto; left: auto; right: auto; bottom: auto; position: static; }',
@@ -2120,5 +2239,5 @@ else setTimeout(cosmos, 0);
       'background: url("../images/v2images/icons_home.png") no-repeat scroll 8px -1856px #00A1D6;',
     '}',
   ].join(''));
-}());
-
+};
+addStyle();
