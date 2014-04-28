@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.27
+// @version     2.28
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -29,6 +29,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.28 ：改善通过相邻视频推测功能，修理获取标题失败问题
    * 2.27 ：生成页面增加显示番剧信息，修复生成页面长按鼠标菜单的相关问题
    * 2.26 ：调整样式，增强Chrome/Oprea在用户空间页面的兼容性
    * 2.25 ：修理Chrome/Oprea下显示专题链接的问题
@@ -67,8 +68,9 @@ var cosmos = function () {
     'debug': GM_getValue('debug', !1) === true, // 是否打印调试信息
     'cache': GM_getValue('cache', !0) === true, // 是否使用缓存
     'check': GM_getValue('check', !0) === true, // 是否检查替换后是否能正常播放
+    'stgsz': Number(GM_getValue('stgsz', 10000)) || 10000, // 缓存最大条目数
     'export': GM_getValue('export', !0) === true, // 是否向外部暴露接口
-    'stgsz': Number(GM_getValue('stgsz', 5000)) || 5000, // 缓存最大条目数
+    'netmax': Number(GM_getValue('netmax', 50)) || 50, // 通过相邻视频推测时最多进行网络访问数量
     'url': {
       'bilibili': 'bilibili.tv',
       'host': [
@@ -113,13 +115,14 @@ var cosmos = function () {
       'playurl': 'http://interface.bilibili.cn/playurl?cid={cid}',
       'player': 'http://interface.bilibili.cn/player?id=cid:{cid}',
       'page_arc': 'http://static.hdslb.com/js/page.arc.js',
-      'suggest': 'http://www.bilibili.tv/suggest?term=av{aid}',
+      'suggest': 'http://www.bilibili.tv/suggest?term=av{aid}&jsoncallback={callback}',
       'html5': 'http://www.bilibili.tv/m/html5?aid={aid}&page={pid}',
       'pagelist': 'http://www.bilibili.tv/widget/getPageList?aid={aid}',
     },
     'text': {
       'fail': {
         'get': '获取cid失败，若刷新对此无效则可能对该视频无效。',
+        'getc': '获取cid失败，您可以尝试刷新。或者分页列表处给出了一些猜测的cid，很可能不准确。',
         'check': '无法替换播放器，（网络访问出错或原视频链接已失效）；视频源：{source}。(cid:{cid})',
         'msg': '无法替换播放器，错误信息：{msg}；视频源：{source}。(cid:{cid})',
         'unsupport': '无法替换{source}源的视频。{msg}(cid:{cid})',
@@ -414,7 +417,7 @@ var cosmos = function () {
 
   // 刷新配置项
   var flushConfig = (function () {
-    ['debug', 'cache', 'check', 'stgsz', 'export'].forEach(function (k) {
+    ['debug', 'cache', 'check', 'stgsz', 'export', 'netmax'].forEach(function (k) {
       GM_setValue(k, bilibili[k]);
     });
   }());
@@ -546,7 +549,7 @@ var cosmos = function () {
     var msgBox = document.createElement('div'); msgBox.id = 'rbb-message';
     document.body.parentNode.appendChild(msgBox);
     try { msgBox.style.top = getPosition(document.querySelector('.viewbox .info')).top + 'px'; }
-    catch (e) { msgBox.style.top = '16px'; }
+    catch (e) { msgBox.style.top = '32px'; }
     var zIndex = 11000;
     var showMsg = function (msg, timeout, type, buttons) {
       debug('MessageBox: %s', msg);
@@ -782,10 +785,12 @@ var cosmos = function () {
   };
   var videoInfo = infoCache(), playurlInfo = infoCache();
   var pageInfo = infoCache(), spInfo = infoCache();
+  var candidateCidInfo = infoCache();
 
   // 获取视频源名称
   var getVideoSource = function (id, cid) {
-    if (id.pid === null) return bilibili.text.source.multi;
+    if (Object.keys(cid).length === 1) id.pid = Object.keys(cid)[0];
+    if (id.pid === null) return { 'name': bilibili.text.source.multi };
     var source = bilibili.text.source;
     var name = function (type) { return source.site[type] || source.other; };
     var list, playurl, ret = null;
@@ -997,7 +1002,7 @@ var cosmos = function () {
   var getCidNearby = (function (getCid, getCidCache, getAidCache) {
     return getCid.regist(function (id, onsucc, onerror) {
       showMsg(bilibili.text.loading.near, 10000, 'warning');
-      var findCidInRange;
+      var findCidInRange, candidateCid = [], candidateCidLoading = 0, errorDone = null;
       // 如果找到某个相邻的视频的cid则记录下来
       var found = (function (onsucc, onerror) {
         var lastCid = [], nextCid = [];
@@ -1075,12 +1080,21 @@ var cosmos = function () {
       };
       getNearCid(function (aid, i) { return aid - i; }, found.last);
       getNearCid(function (aid, i) { return aid + i; }, found.next);
+      // 没有找到的时候处理一下可能的情况
+      var notFound = function () {
+        errorDone = true;
+        if (!candidateCidLoading) call(onerror);
+      };
+      var candidateLoadDone = function () {
+        candidateCidInfo.put(id.aid, candidateCid);
+        if (errorDone && !candidateCidLoading) notFound();
+      };
       // 在某个已知的范围内逐个检查是否有对应该aid的cid
       findCidInRange = function (lastCid, nextCid) {
         debug('find in range %s - %s', JSON.stringify(lastCid), JSON.stringify(nextCid));
         nextCid.pop(); lastCid.pop();
         var m = (nextCid[0] + lastCid[0]) / 2;
-        if (isNaN(m)) call(onerror);
+        if (isNaN(m)) call(notFound);
         while (nextCid.length < lastCid.length) nextCid.push(nextCid[nextCid.length - 1]);
         while (nextCid.length > lastCid.length) lastCid.push(lastCid[lastCid.length - 1]);
         var failCount = 0, cid = {};
@@ -1096,11 +1110,12 @@ var cosmos = function () {
           if (id.pid) if (cid[id.pid]) ret = cid[id.pid]; else ret = undefined;
           else if (!Object.keys(cid).length) ret = undefined;
           if (ret) call(function () { onsucc(cid); });
-          else call(onerror);
+          else call(notFound);
         };
         debug('Searching in lastCids: %o, nextCids: %o', lastCid, nextCid);
         debug('Searching in cid list: %o', cids);
         var networkCounter = 0;
+        // 对每个范围内的cid进行搜索
         (function tryFindCid(i) {
           var currentCid, re = i - cids.length;
           if (i < cids.length) currentCid = cids[i];
@@ -1108,18 +1123,36 @@ var cosmos = function () {
             if (re & 1) currentCid = lastCid[lastCid.length - 1] - (re >> 1) - 1;
             else currentCid = nextCid[nextCid.length - 1] + (re >> 1) + 1;
           }
-          if (networkCounter > 32) done();
+          if (networkCounter > bilibili.netmax) done();
           else getAid(currentCid,
+            // 找到对应的aid
             function (rid) {
               if (this === getAidByInterface) networkCounter++;
               if (rid.aid === id.aid) { cid[rid.pid] = currentCid; tryFindCid(i + 1); }
+              else if (rid.aid === 0) { candidateCid.push(currentCid); }
               else {
                 if (Object.keys(cid).length === Math.max.apply(Math, Object.keys(cid))) failCount++;
                 if (failCount > Object.keys(cid).length * 4 + 6) done();
                 else tryFindCid(i + 1);
               }
             },
-            function () { if (Object.keys(cid).length) failCount++; tryFindCid(i + 1); }
+            // 没找到对应的aid
+            function () {
+              candidateCidLoading++;
+              if (Object.keys(cid).length) failCount++; tryFindCid(i + 1);
+              checkCid(currentCid, function () {
+                // 如果一个cid不对应aid，但是对应了视频，那就说明这个cid曾经是有效的
+                candidateCidLoading--;
+                candidateCid.push(currentCid);
+                getAidCache.put(currentCid, {'aid': 0, 'pid': 0});
+                candidateLoadDone();
+              }, function () {
+                // 如果一个cid既不对应aid，又不对应视频，那么就是说这个cid是无效的
+                candidateCidLoading--;
+                getAidCache.put(currentCid, {'aid': null, 'pid': null});
+                candidateLoadDone();
+              })
+            }
           );
         }(0));
       };
@@ -1193,12 +1226,22 @@ var cosmos = function () {
   // 通过搜索建议获取视频标题
   var getTitleBySearchSuggestion = (function (getTitle) {
     return getTitle.regist(function (aid, onsucc, onerror) {
+      // 他们改了逻辑，现在一定要指定回调函数了，不然不给数据，所以假冒一个……
+      // 他们是用jQuery默认生成的JSONP回调函数的，所以这里模仿jQuery的生成方式
+      // 格式为 "jQuery" + 版本号 + 随机数字 + "_" + Unix时间戳
+      var fakeCallback = '';
+      var version = null;
+      try { version = unsafeWindow.jQuery.fn.jquery; } catch (e) { version = '1.7.2'; }
+      fakeCallback = "jQuery" + (version + Math.random()).replace(/\D/g, "") + "_" + Number(new Date());
       GM_xmlhttpRequest({
         'method': 'GET',
-        'url': genURL(bilibili.url.suggest, { 'aid': aid }),
+        'url': genURL(bilibili.url.suggest, { 'aid': aid, 'callback': fakeCallback }),
         'onload': function (resp) {
-          try { onsucc(JSON.parse(resp.responseText.slice(1, -2))[0].desc); }
-          catch (e) { onerror(); }
+          try {
+            var data = String(resp.responseText);
+            data = data.slice(data.indexOf('['), data.lastIndexOf(']') + 1);
+            onsucc(JSON.parse(data)[0].desc);
+          } catch (e) { onerror(); }
         },
         'onerror': function () { onerror(); }
       });
@@ -1260,6 +1303,7 @@ var cosmos = function () {
   // 添加分页
   var addPages = function (aid, cids, pages, pid) {
     debug("add pages: %o", cids);
+    var guess = cids.constructor === Array;
     var alist = document.querySelector('#rbb_alist');
     if (!alist) {
       alist = document.createElement('div');
@@ -1276,7 +1320,7 @@ var cosmos = function () {
         alist.appendChild(a);
       }
       if (pages && pages[pid]) a.innerHTML = xmlEscape(pages[pid]);
-      else a.innerHTML = xmlEscape(pid + bilibili.text.split.pid + '(cid=' + cids[pid] + ')');
+      else a.innerHTML = xmlEscape((guess ? ' ? ' : String(pid)) + bilibili.text.split.pid + '(cid=' + cids[pid] + ')');
       a.href = genURL(bilibili.url.video, { 'host': bilibili.host, 'aid': aid, 'pid': pid });
       return pa[pid] = a;
     });
@@ -1483,10 +1527,18 @@ var cosmos = function () {
       var msgbox = null, ignore = false;
       getValidCid(getCidDirect.concat(getCidCached).concat(getCidUndirect),
         id, function (cid, errormsg) {
+          var ccid = [];
           getCurrentCid.gotCid(cid);
           if (msgbox) { delete msgbox.parentNode.removeChild(msgbox); msgbox = null; };
-          if (!cid) showMsg(bilibili.text.fail.get, 12000, 'error');
-          else if (typeof errormsg !== 'undefined') checkCidFail(id, cid, errormsg);
+          if (!cid) {
+            ccid = candidateCidInfo.get(id.aid);
+            if (ccid && ccid.length) {
+              addPages(id.aid, ccid, null, null);
+              showMsg(bilibili.text.fail.getc, 12000, 'warning');
+            } else {
+              showMsg(bilibili.text.fail.get, 12000, 'error');
+            }
+          } else if (typeof errormsg !== 'undefined') checkCidFail(id, cid, errormsg);
           else {
             var oldBofqi = replaceBofqi(id, cid, ignore);
             if (ignore) replacedMenu(oldBofqi);
