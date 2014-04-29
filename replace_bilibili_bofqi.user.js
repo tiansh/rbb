@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.28
+// @version     2.29
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -29,6 +29,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.29 ：没有播放器是，长按链接菜单将生成页面排到前面
    * 2.28 ：改善推断视频地址算法，修理获取标题失败问题；鉴于最近的一些情况，在404页面启用脚本
    * 2.27 ：生成页面增加显示番剧信息，修复生成页面长按鼠标菜单的相关问题
    * 2.26 ：调整样式，增强Chrome/Oprea在用户空间页面的兼容性
@@ -599,13 +600,16 @@ var cosmos = function () {
     return false;
   };
 
+  // 检查页面中是否有播放器
+  var hasBofqi = function (doc) {
+    return !!doc.querySelector('#bofqi');
+  };
+
   // 检查是否支持此页面
   var validPage = function () {
     var id = videoPage(location.href);
     // 仅在视频页面运行本脚本
     if (!id || !id.aid) return null;
-    // 页面中要有播放器或者错误信息
-    // if (!document.querySelector('.z-msg') && !document.querySelector('#bofqi')) return null;
     // 忽略已经使用原生播放器的视频
     if (isBilibiliBofqi(document)) return null;
     // 天国的Flash游戏分区不算外站播放器
@@ -1278,7 +1282,6 @@ var cosmos = function () {
     return ret;
   }());
 
-
   // 添加标题、评论
   var addContent = function (aid, title, scriptLoaded) {
     var z = document.querySelector('.z');
@@ -1569,7 +1572,7 @@ var cosmos = function () {
               ]);
         });
     };
-    if (!document.querySelector('#bofqi')) addBofqi(id.aid, act);
+    if (!hasBofqi(document)) addBofqi(id.aid, act);
     else act();
   }());
 
@@ -1601,7 +1604,7 @@ var cosmos = function () {
       menuContainer().appendChild(menu);
       var isRbb = menu.className.split(' ').indexOf('rbb-menu') !== -1;
       var dx = 0, dy = 0;
-      if (isRbb && sp) dx = -120;
+      if (isRbb && sp) dx = -124;
       if (!isRbb && sp) dy = -32;
       if (menu.clientWidth + position.x > document.body.clientWidth) {
         menu.style.right = (document.body.clientWidth - position.x - 8 + dx) + 'px';
@@ -1834,6 +1837,7 @@ var cosmos = function () {
             var host = getHost(resp.finalUrl);
             var inSite = host && bilibili.url.host.indexOf(host) !== -1;
             var doc = new DOMParser().parseFromString(resp.responseText, 'text/html')
+            if (!hasBofqi(doc)) inSite = false;
             checkHost(inSite, isBilibiliBofqi(doc));
           }
         } catch (e) { checkHost(); }
