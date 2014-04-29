@@ -29,7 +29,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
-   * 2.28 ：改善通过相邻视频推测功能，修理获取标题失败问题
+   * 2.28 ：改善推断视频地址算法，修理获取标题失败问题；鉴于最近的一些情况，在404页面启用脚本
    * 2.27 ：生成页面增加显示番剧信息，修复生成页面长按鼠标菜单的相关问题
    * 2.26 ：调整样式，增强Chrome/Oprea在用户空间页面的兼容性
    * 2.25 ：修理Chrome/Oprea下显示专题链接的问题
@@ -605,7 +605,7 @@ var cosmos = function () {
     // 仅在视频页面运行本脚本
     if (!id || !id.aid) return null;
     // 页面中要有播放器或者错误信息
-    if (!document.querySelector('.z-msg') && !document.querySelector('#bofqi')) return null;
+    // if (!document.querySelector('.z-msg') && !document.querySelector('#bofqi')) return null;
     // 忽略已经使用原生播放器的视频
     if (isBilibiliBofqi(document)) return null;
     // 天国的Flash游戏分区不算外站播放器
