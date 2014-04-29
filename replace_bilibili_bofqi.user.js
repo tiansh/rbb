@@ -115,14 +115,15 @@ var cosmos = function () {
       'playurl': 'http://interface.bilibili.cn/playurl?cid={cid}',
       'player': 'http://interface.bilibili.cn/player?id=cid:{cid}',
       'page_arc': 'http://static.hdslb.com/js/page.arc.js',
-      'suggest': 'http://www.bilibili.tv/suggest?term=av{aid}&jsoncallback={callback}',
+      'suggest': 'http://www.bilibili.tv/suggest?term=av{aid}' +
+        '&jsoncallback={callback}&rnd={random}&_={date}',
       'html5': 'http://www.bilibili.tv/m/html5?aid={aid}&page={pid}',
       'pagelist': 'http://www.bilibili.tv/widget/getPageList?aid={aid}',
     },
     'text': {
       'fail': {
         'get': '获取cid失败，若刷新对此无效则可能对该视频无效。',
-        'getc': '获取cid失败，您可以尝试刷新。或者分页列表处给出了一些猜测的cid，很可能不准确。',
+        'getc': '获取cid失败，若刷新对此无效则可能对该视频无效。顺便找到了一些附近的隐藏视频……',
         'check': '无法替换播放器，（网络访问出错或原视频链接已失效）；视频源：{source}。(cid:{cid})',
         'msg': '无法替换播放器，错误信息：{msg}；视频源：{source}。(cid:{cid})',
         'unsupport': '无法替换{source}源的视频。{msg}(cid:{cid})',
@@ -789,7 +790,8 @@ var cosmos = function () {
 
   // 获取视频源名称
   var getVideoSource = function (id, cid) {
-    if (Object.keys(cid).length === 1) id.pid = Object.keys(cid)[0];
+    if (id.pid === null && typeof cid !== 'number' && Object.keys(cid).length === 1)
+      id.pid = Object.keys(cid)[0];
     if (id.pid === null) return { 'name': bilibili.text.source.multi };
     var source = bilibili.text.source;
     var name = function (type) { return source.site[type] || source.other; };
@@ -1235,7 +1237,12 @@ var cosmos = function () {
       fakeCallback = "jQuery" + (version + Math.random()).replace(/\D/g, "") + "_" + Number(new Date());
       GM_xmlhttpRequest({
         'method': 'GET',
-        'url': genURL(bilibili.url.suggest, { 'aid': aid, 'callback': fakeCallback }),
+        'url': genURL(bilibili.url.suggest, {
+          'aid': aid,
+          'callback': fakeCallback,
+          'rnd': Math.random(),
+          '_': Number(new Date()),
+        }),
         'onload': function (resp) {
           try {
             var data = String(resp.responseText);
