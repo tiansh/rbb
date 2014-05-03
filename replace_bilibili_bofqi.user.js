@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.29
+// @version     2.30
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -18,6 +18,20 @@
 // @run-at      document-start
 // ==/UserScript==
 
+// 如果想要修改程序的相关配置，可以在这里修改。
+// 这些配置会存储到文件中，因此即便自动升级，也会保留之前的配置，不必禁用自动升级。
+// 如果为null则表示这里将使用原来设置的值或默认值。
+var config = {
+  'debug': null, // 是否打印调试信息（Boolean，默认false）
+  'cache_active': false, // 是否使用磁盘缓存（Boolean，默认true）
+  'cache_maxsize': null, // 缓存最大条目数 （Number，默认10000）
+  'check': null, // 是否检查替换后是否能正常播放（Boolean，默认true）
+  'export': null, // 是否向外部暴露接口（Boolean，默认true）
+  'netmax': null, // 通过相邻视频推测时最多检查多少个视频（Number，默认50）
+  'cmenu_type': null, // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
+  'clean': false, // 这里为true的话会清空所有本地设置，全部使用默认值，上面的所有设置将无效
+};
+
 /*
 
 Replace bilibili bofqi
@@ -29,7 +43,8 @@ Replace bilibili bofqi
 
 【历史版本】
 
-   * 2.29 ：没有播放器是，长按链接菜单将生成页面排到前面
+   * 2.30 ：少量代码整理，修理下拉菜单为空时边框显示，修理无法加载到信息的视频的菜单项
+   * 2.29 ：没有播放器时，长按链接菜单将生成页面排到前面
    * 2.28 ：改善推断视频地址算法，修理获取标题失败问题；鉴于最近的一些情况，在404页面启用脚本
    * 2.27 ：生成页面增加显示番剧信息，修复生成页面长按鼠标菜单的相关问题
    * 2.26 ：调整样式，增强Chrome/Oprea在用户空间页面的兼容性
@@ -66,12 +81,6 @@ var preLoaded = (function () {
 var cosmos = function () {
 
   var bilibili = {
-    'debug': GM_getValue('debug', !1) === true, // 是否打印调试信息
-    'cache': GM_getValue('cache', !0) === true, // 是否使用缓存
-    'check': GM_getValue('check', !0) === true, // 是否检查替换后是否能正常播放
-    'stgsz': Number(GM_getValue('stgsz', 10000)) || 10000, // 缓存最大条目数
-    'export': GM_getValue('export', !0) === true, // 是否向外部暴露接口
-    'netmax': Number(GM_getValue('netmax', 50)) || 50, // 通过相邻视频推测时最多进行网络访问数量
     'url': {
       'bilibili': 'bilibili.tv',
       'host': [
@@ -110,7 +119,7 @@ var cosmos = function () {
         { // 手机客户端的passkey（苹果系统与安卓系统的区别在于platform参数和userAgent）
           'url': 'http://api.bilibili.cn/view?type=json&id={aid}&batch=1' +
             '&platform=ios&appkey=0a99fa1d87fdd38c',
-          'ua': 'bilianime/530 CFNetwork/672.0.8 Darwin/14.0.0',
+          'ua': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0',
         },
       ],
       'playurl': 'http://interface.bilibili.cn/playurl?cid={cid}',
@@ -418,15 +427,45 @@ var cosmos = function () {
   if (bilibili.url.host.indexOf(bilibili.host) === -1) bilibili.host = bilibili.url.host[0];
 
   // 刷新配置项
-  var flushConfig = (function () {
-    ['debug', 'cache', 'check', 'stgsz', 'export', 'netmax'].forEach(function (k) {
-      GM_setValue(k, bilibili[k]);
-    });
+  bilibili.config = (function () {
+    var ret = {};
+    var configItems = [
+      // key, storage, type, default
+      ['debug', 'debug', Boolean, false],
+      ['cache_active', 'cache', Boolean, true],
+      ['cache_maxsize', 'stgsz', Number, 10000],
+      ['check', 'check', Boolean, true],
+      ['export', 'export', Boolean, true],
+      ['netmax', 'netmax', Number, 50],
+      ['cmenu_type', 'cmtp', String, 'default'],
+    ];
+    var readConfig = function (key, gmk, type, value) {
+      if (config[key] === null) config[key] = GM_getValue(gmk, null);
+      if (config[key] === null) config[key] = value;
+      config[key] = type(config[key]);
+      if (config[key] !== config[key] || config.clean) config[key] = value;
+    };
+    var flushConfig = function (key, gmk, type, value) {
+      GM_setValue(gmk, config[key]);
+      ret[key] = config[key];
+    };
+    var show = function () {
+      debug('Configuration of RBB: %o', ret);
+    };
+    return (function () {
+      configItems.forEach(function (i) {
+        readConfig.apply(this, i);
+        flushConfig.apply(this, i);
+      });
+      if (ret.debug) console.log("RBB config: %o", ret);
+      delete config;
+      return ret;
+    }());
   }());
 
   // 打印调试信息
   var debug = (function () {
-    if (bilibili.debug) return console.log.bind(console);
+    if (bilibili.config.debug) return console.log.bind(console);
     return function () { };
   }());
 
@@ -509,6 +548,7 @@ var cosmos = function () {
       });
       return val;
     };
+    // 从地址的本地参数中删除一个参数
     var del = function (key) {
       var f = false;
       if (typeof a === 'string') a = href2A(a);
@@ -698,7 +738,7 @@ var cosmos = function () {
       // 依次调用注册的函数
       (function tryGetId(i) {
         if (done || i === ways.length) return;
-        debug('Get id use ways[%d], with iid = %s', i, JSON.stringify(iid));
+        debug('Get id %d: %o, with iid = %o', i, ways[i], iid);
         act(ways[i], function () { tryGetId(i + 1); });
       }(0));
     };
@@ -707,6 +747,27 @@ var cosmos = function () {
     return run;
   };
 
+  // 内存信息缓存
+  var infoCache = function () {
+    var data = {};
+    var put = function (key, value) {
+      if (!value) return null;
+      return data[key] = value;
+    };
+    var get = function (key, defaultValue) {
+      var value = data[key];
+      if (typeof value === 'undefined') return defaultValue;
+      return data[key];
+    };
+    var del = function (key) { delete data[key]; };
+    var clear = function (key) { delete data; data = {}; }
+    return { 'get': get, 'put': put, 'del': del, 'clear': clear };
+  };
+  var videoInfo = infoCache(), playurlInfo = infoCache();
+  var pageInfo = infoCache(), spInfo = infoCache();
+  var candidateCidInfo = infoCache();
+
+  // 文件信息缓存
   // 将网络访问getId的结果缓存起来
   // 不过实际上是通过注册到getId中的函数直接调用实现的读写
   var getIdCache = (function () {
@@ -725,46 +786,38 @@ var cosmos = function () {
       var clearData = function (data) {
         GM_deleteValue(cacheKey);
       };
-      // 读
       var get = function (key, defaultValue) {
         var value = getData()[key];
         if (typeof value === 'undefined') return defaultValue;
         return value;
       };
-      // 写
       var put = function (key, value) {
         var data = getData();
         data[key] = value;
         putData(data);
         return value;
       };
-      // 删
       var del = function (key) {
         var data = getData();
         delete data[key];
         putData(data);
       };
-      // 清
       var clear = function () {
         clearData();
       };
-      if (Object.keys(getData()).length > bilibili.stgsz) clearData();
+      if (Object.keys(getData()).length > bilibili.config.cache_maxsize) clearData();
       return { 'get': get, 'put': put, 'del': del, 'clear': clear };
     };
-    if (bilibili.cache) {
+    if (bilibili.config.cache_active) {
       // 开启了缓存
       return function (cacheKey) {
         return caches[cacheKey] = caches[cacheKey] || cache(cacheKey);
       };
     } else {
       return function (cacheKey) {
-        // 没开启缓存的话直接清空缓存并提供一组桩过程
+        // 没开启文件缓存的话转而用内存的缓存
         cache(cacheKey).clear();
-        var nop = function () { };
-        return {
-          'get': nop, 'del': nop, 'clear': nop,
-          'put': function (k, v) { return v; },
-        };
+        return infoCache();
       };
     }
   }());
@@ -775,22 +828,6 @@ var cosmos = function () {
   var getTitle = getId();
   // 对getCid和getAid的结果分别进行缓存
   var getCidCache = getIdCache('chatid'), getAidCache = getIdCache('av');
-
-  // 视频相关信息
-  var infoCache = function () {
-    var data = {};
-    var put = function (key, value) {
-      if (!value) return null;
-      return data[key] = value;
-    };
-    var get = function (key) {
-      return data[key];
-    };
-    return { 'get': get, 'put': put };
-  };
-  var videoInfo = infoCache(), playurlInfo = infoCache();
-  var pageInfo = infoCache(), spInfo = infoCache();
-  var candidateCidInfo = infoCache();
 
   // 获取视频源名称
   var getVideoSource = function (id, cid) {
@@ -1129,7 +1166,7 @@ var cosmos = function () {
             if (re & 1) currentCid = lastCid[lastCid.length - 1] - (re >> 1) - 1;
             else currentCid = nextCid[nextCid.length - 1] + (re >> 1) + 1;
           }
-          if (networkCounter > bilibili.netmax) done();
+          if (networkCounter > bilibili.config.netmax) done();
           else getAid(currentCid,
             // 找到对应的aid
             function (rid) {
@@ -1168,7 +1205,7 @@ var cosmos = function () {
   // 检查该cid是否可用
   // 若检查成功则可以替换播放器；否则即便替换播放器也只会看到无限小电视或16秒“非常抱歉”错误提示
   var checkCid = function (cid, onsucc, onerror) {
-    if (!bilibili.check) { onsucc(cid); return; }
+    if (!bilibili.config.check) { onsucc(cid); return; }
     GM_xmlhttpRequest({
       'method': 'GET',
       'url': genURL(bilibili.url.playurl, { 'cid': cid }),
@@ -1604,7 +1641,7 @@ var cosmos = function () {
       menuContainer().appendChild(menu);
       var isRbb = menu.className.split(' ').indexOf('rbb-menu') !== -1;
       var dx = 0, dy = 0;
-      if (isRbb && sp) dx = -124;
+      if (isRbb && sp) dx = -128;
       if (!isRbb && sp) dy = -32;
       if (menu.clientWidth + position.x > document.body.clientWidth) {
         menu.style.right = (document.body.clientWidth - position.x - 8 + dx) + 'px';
@@ -1699,7 +1736,9 @@ var cosmos = function () {
     var menu = null;
     var initMenu = function (cids, inSite, isOrigen) {
       call(function () { a.onclick = oldOnclick; a.style.removeProperty('cursor'); });
+      var configMenu = bilibili.config.cmenu_type;
       var wholeMenu = cids && inSite === false || !isOrigen;
+      if (configMenu === 'complete') wholeMenu = true;
       var info = videoInfo.get(id.aid) || {};
       var page = pageInfo.get(id.aid) || {};
       var rbb = {
@@ -1737,7 +1776,7 @@ var cosmos = function () {
           'title': bilibili.text.fail.default,
           'href': a.href,
           'submenu': [],
-        }], position);
+        }], null, position);
       }
       var pids = Object.keys(rbb.cids).map(Number)
         .sort(function (x, y) { return x - y; });
@@ -1761,6 +1800,7 @@ var cosmos = function () {
         }; else return {
           'title': title,
           'href': href_p(pids[0]),
+          'submenu': [],
         }
       };
       // 生成页面
@@ -1788,11 +1828,12 @@ var cosmos = function () {
         iframe = menuItem(bilibili.text.menu.swf, iframeLink);
         if (inSite !== false) menuItems = [origen, page, iframe];
         else menuItems = [page, iframe, origen];
-      } else {
-        menuItems = [origen];
+        if (configMenu === 'simple') menuItems.length = 1;
+      } else menuItems = [origen];
+      if (menuItems.length === 1) {
         menuItems[0].title = rbb.title ||
-          (menuItems[0].submenu ? bilibili.text.menu.chose : bilibili.text.menu.origen);
-        menuItems[0].submenu = menuItems[0].submenu || [];
+          (menuItems[0].submenu.length ?
+          bilibili.text.menu.chose : bilibili.text.menu.origen);
       }
       // 专题
       var sp = spInfo.get(id.aid) || undefined;
@@ -2151,7 +2192,7 @@ var cosmos = function () {
 
   // 向unsafeWindow暴露这些接口
   unsafeWindow.replaceBilibiliBofqi = (function () {
-    if (!bilibili.export) return;
+    if (!bilibili.config.export) return;
     var x = {};
     x.push = function () {
       debug("replaceBilibiliBofqi export, arguments: %o", arguments);
@@ -2190,7 +2231,8 @@ var addStyle = function () {
     '#rbb-menu-container .rbb-menu .rbb-menu-title { height: 32px; width: 100%; }',
     '#rbb-menu-container .rbb-menu .rbb-menu-item { height: 32px; width: 120px; float: left; }',
     '#rbb-menu-container .rbb-menu.rbb-float-right .rbb-menu-item { float: right; }',
-    '#rbb-menu-container .rbb-submenu .rbb-menu-item { float: none; }',
+    '#rbb-menu-container .rbb-menu .rbb-submenu .rbb-menu-item { float: none; }',
+    '#rbb-menu-container .rbb-menu .rbb-submenu:empty { display: none; }',
     '#rbb-menu-container .rbb-menu .rbb-menu-item .rbb-submenu { ',
       'max-height: 0px; background: #fff; float: left; min-width: 112px; ',
       'background-clip: padding-box; margin-left: -4px;',
