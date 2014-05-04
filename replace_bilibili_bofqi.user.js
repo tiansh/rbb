@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.30
+// @version     2.31
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -18,12 +18,12 @@
 // @run-at      document-start
 // ==/UserScript==
 
-// 如果想要修改程序的相关配置，可以在这里修改。
+// 如果想要修改程序的相关配置，可以直接在这里修改。
 // 这些配置会存储到文件中，因此即便自动升级，也会保留之前的配置，不必禁用自动升级。
 // 如果为null则表示这里将使用原来设置的值或默认值。
 var config = {
   'debug': null, // 是否打印调试信息（Boolean，默认false）
-  'cache_active': false, // 是否使用磁盘缓存（Boolean，默认true）
+  'cache_active': null, // 是否使用磁盘缓存（Boolean，默认true）
   'cache_maxsize': null, // 缓存最大条目数 （Number，默认10000）
   'check': null, // 是否检查替换后是否能正常播放（Boolean，默认true）
   'export': null, // 是否向外部暴露接口（Boolean，默认true）
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.31 ：播放页面500也可以播给你看！
    * 2.30 ：少量代码整理，修理下拉菜单为空时边框显示，修理无法加载到信息的视频的菜单项
    * 2.29 ：没有播放器时，长按链接菜单将生成页面排到前面
    * 2.28 ：改善推断视频地址算法，修理获取标题失败问题；鉴于最近的一些情况，在404页面启用脚本
@@ -426,39 +427,37 @@ var cosmos = function () {
   };
   if (bilibili.url.host.indexOf(bilibili.host) === -1) bilibili.host = bilibili.url.host[0];
 
+  // 以setTimeout调用函数
+  var call = function (f) { setTimeout(f, 0); };
+
   // 刷新配置项
   bilibili.config = (function () {
     var ret = {};
-    var configItems = [
-      // key, storage, type, default
-      ['debug', 'debug', Boolean, false],
-      ['cache_active', 'cache', Boolean, true],
-      ['cache_maxsize', 'stgsz', Number, 10000],
-      ['check', 'check', Boolean, true],
-      ['export', 'export', Boolean, true],
-      ['netmax', 'netmax', Number, 50],
-      ['cmenu_type', 'cmtp', String, 'default'],
-    ];
-    var readConfig = function (key, gmk, type, value) {
-      if (config[key] === null) config[key] = GM_getValue(gmk, null);
-      if (config[key] === null) config[key] = value;
-      config[key] = type(config[key]);
-      if (config[key] !== config[key] || config.clean) config[key] = value;
+    // 这里是默认配置，请勿直接修改这里，修改配置请到文件开头
+    var defaultConfig = {
+      'debug': false,
+      'cache_active': true,
+      'cache_maxsize': 10000,
+      'check': true,
+      'export': true,
+      'netmax': 50,
+      'cmenu_type': 'default',
     };
-    var flushConfig = function (key, gmk, type, value) {
-      GM_setValue(gmk, config[key]);
+    var readConfig = function (key) {
+      if (config[key] === null) config[key] = GM_getValue(key, null);
+      if (config[key] === null) config[key] = defaultConfig[key];
+      config[key] = defaultConfig[key].constructor(config[key]);
+      if (config[key] !== config[key] || config.clean) config[key] = defaultConfig[key];
+    };
+    var flushConfig = function (key) {
+      GM_setValue(key, config[key]);
       ret[key] = config[key];
     };
-    var show = function () {
-      debug('Configuration of RBB: %o', ret);
-    };
     return (function () {
-      configItems.forEach(function (i) {
-        readConfig.apply(this, i);
-        flushConfig.apply(this, i);
-      });
-      if (ret.debug) console.log("RBB config: %o", ret);
-      delete config;
+      var keys = Object.keys(defaultConfig);
+      keys.forEach(readConfig);
+      keys.forEach(flushConfig);
+      call(function () { debug('RBB config: %o', ret) })
       return ret;
     }());
   }());
@@ -508,8 +507,6 @@ var cosmos = function () {
     return a.hostname;
   };
 
-  // 以setTimeout调用函数
-  var call = function (f) { setTimeout(f, 0); };
   // XML字符转义
   var xmlEscape = function (s) {
     return String(s).replace(/./g, function (c) { return '&#' + c.charCodeAt(0) + ';'; });
@@ -2046,13 +2043,15 @@ var cosmos = function () {
         var obj = old.querySelector(qs);
         return obj.parentNode.removeChild(obj);
       };
-      var z = document.querySelector('.z');
-      ['.z_top', '.header'].map(getNode).forEach(function (obj) {
-        z.parentNode.insertBefore(obj, z);
-      });
-      ['.footer'].map(getNode).forEach(function (obj) {
-        z.parentNode.appendChild(obj);
-      });
+      try {
+        var z = document.querySelector('.z');
+        ['.z_top', '.header'].map(getNode).forEach(function (obj) {
+          z.parentNode.insertBefore(obj, z);
+        });
+        ['.footer'].map(getNode).forEach(function (obj) {
+          z.parentNode.appendChild(obj);
+        });
+      } catch (e) { }
       window.addEventListener('load', function () {
         var i, o;
         document.querySelector('.tag').innerHTML = '';
