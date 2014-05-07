@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.31
+// @version     2.32
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.32 ：修理对页面广告的兼容性（因为我一直在用ABP所以没发现）
    * 2.31 ：播放页面500也可以播给你看！
    * 2.30 ：少量代码整理，修理下拉菜单为空时边框显示，修理无法加载到信息的视频的菜单项
    * 2.29 ：没有播放器时，长按链接菜单将生成页面排到前面
@@ -647,6 +648,11 @@ var cosmos = function () {
     var id = videoPage(location.href);
     // 仅在视频页面运行本脚本
     if (!id || !id.aid) return null;
+    // 页面中要有播放器或者错误信息
+    if (!document.querySelector('.z-msg') &&
+      !document.querySelector('#bofqi') &&
+      !document.querySelector('.errmsg') &&
+      document.title !== 'bilibili - 提示') return null;
     // 忽略已经使用原生播放器的视频
     if (isBilibiliBofqi(document)) return null;
     // 天国的Flash游戏分区不算外站播放器
@@ -1118,7 +1124,7 @@ var cosmos = function () {
           );
         }());
       };
-      getNearCid(function (aid, i) { return aid - i; }, found.last);
+      getNearCid(function (aid, i) { return Math.max(aid - i, 1); }, found.last);
       getNearCid(function (aid, i) { return aid + i; }, found.next);
       // 没有找到的时候处理一下可能的情况
       var notFound = function () {
@@ -1163,37 +1169,39 @@ var cosmos = function () {
             if (re & 1) currentCid = lastCid[lastCid.length - 1] - (re >> 1) - 1;
             else currentCid = nextCid[nextCid.length - 1] + (re >> 1) + 1;
           }
-          if (networkCounter > bilibili.config.netmax) done();
-          else getAid(currentCid,
-            // 找到对应的aid
-            function (rid) {
-              if (this === getAidByInterface) networkCounter++;
-              if (rid.aid === id.aid) { cid[rid.pid] = currentCid; tryFindCid(i + 1); }
-              else if (rid.aid === 0) { candidateCid.push(currentCid); }
-              else {
-                if (Object.keys(cid).length === Math.max.apply(Math, Object.keys(cid))) failCount++;
-                if (failCount > Object.keys(cid).length * 4 + 6) done();
-                else tryFindCid(i + 1);
-              }
-            },
-            // 没找到对应的aid
-            function () {
-              candidateCidLoading++;
-              if (Object.keys(cid).length) failCount++; tryFindCid(i + 1);
-              checkCid(currentCid, function () {
-                // 如果一个cid不对应aid，但是对应了视频，那就说明这个cid曾经是有效的
-                candidateCidLoading--;
-                candidateCid.push(currentCid);
-                getAidCache.put(currentCid, {'aid': 0, 'pid': 0});
-                candidateLoadDone();
-              }, function () {
-                // 如果一个cid既不对应aid，又不对应视频，那么就是说这个cid是无效的
-                candidateCidLoading--;
-                getAidCache.put(currentCid, {'aid': null, 'pid': null});
-                candidateLoadDone();
-              })
+          // 找到对应的aid
+          var onsucc = function (rid) {
+            if (this === getAidByInterface) networkCounter++;
+            if (rid.aid === id.aid) { cid[rid.pid] = currentCid; tryFindCid(i + 1); }
+            else if (rid.aid === 0) { candidateCid.push(currentCid); }
+            else {
+              if (Object.keys(cid).length === Math.max.apply(Math, Object.keys(cid))) failCount++;
+              if (failCount > Object.keys(cid).length * 4 + 6) done();
+              else tryFindCid(i + 1);
             }
-          );
+          };
+          // 没找到对应的aid
+          var onerror = function () {
+            if (currentCid < 0)
+            candidateCidLoading++;
+            if (Object.keys(cid).length) failCount++;
+            call(function () { tryFindCid(i + 1); });
+            checkCid(currentCid, function () {
+              // 如果一个cid不对应aid，但是对应了视频，那就说明这个cid曾经是有效的
+              candidateCidLoading--;
+              candidateCid.push(currentCid);
+              getAidCache.put(currentCid, {'aid': 0, 'pid': 0});
+              candidateLoadDone();
+            }, function () {
+              // 如果一个cid既不对应aid，又不对应视频，那么就是说这个cid是无效的
+              candidateCidLoading--;
+              getAidCache.put(currentCid, {'aid': null, 'pid': null});
+              candidateLoadDone();
+            })
+          };
+          if (networkCounter > bilibili.config.netmax) done();
+          else if (currentCid <= 0) call(function () { tryFindCid(i + 1); });
+          else getAid(currentCid, onsucc, onerror);
         }(0));
       };
     });
@@ -2342,6 +2350,8 @@ var addStyle = function () {
     '.viewbox .alist a.curPage:hover { ',
       'background: url("../images/v2images/icons_home.png") no-repeat scroll 8px -1856px #00A1D6;',
     '}',
+    // rbb_alist
+    '#rbb_alist { float:left; width: 100%; max-height: 70px; overflow-y: auto; }',
   ].join(''));
 };
 addStyle();
