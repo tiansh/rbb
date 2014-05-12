@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.32
+// @version     2.33
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.33 ：二次元新番列表显示隐藏的视频
    * 2.32 ：修理对页面广告的兼容性（因为我一直在用ABP所以没发现）
    * 2.31 ：播放页面500也可以播给你看！
    * 2.30 ：少量代码整理，修理下拉菜单为空时边框显示，修理无法加载到信息的视频的菜单项
@@ -67,8 +68,8 @@ Replace bilibili bofqi
 var preLoaded = (function () {
   // 检查是否是生成用的页面，如果是的话则标记并隐藏内容
   var fakePage = function () {
-    var prefix = location.protocol + '//' + location.host + '/video/av1/index_1.html';
-    if (location.href.indexOf(prefix) !== 0) return false;
+    var prefix = '/video/av1/index_1.html';
+    if (location.pathname.indexOf(prefix) !== 0) return false;
     if (location.hash.indexOf('rbb=') === 0) return false;
     GM_addStyle('html { display: none; }');
     document.title = '哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili.tv';
@@ -205,8 +206,8 @@ var cosmos = function () {
     },
     'host': location.host,
     'timeout': {
-      'press': 250,
-      'network': 2000,
+      'press': 200,
+      'network': 1000,
     },
     'html': {
       'button': function (value) {
@@ -458,7 +459,7 @@ var cosmos = function () {
       var keys = Object.keys(defaultConfig);
       keys.forEach(readConfig);
       keys.forEach(flushConfig);
-      call(function () { debug('RBB config: %o', ret) })
+      call(function () { debug('RBB config: %o', ret); });
       return ret;
     }());
   }());
@@ -499,7 +500,7 @@ var cosmos = function () {
     var datas = [{ '<': '{', '>': '}' }]
       .concat(Array.apply(Array, arguments).slice(1)).concat(bilibili);
     return genStr(xml, function (s) { return s; }, datas);
-  }
+  };
 
   // 通过链接获取主机地址
   var getHost = function (url) {
@@ -546,18 +547,7 @@ var cosmos = function () {
       });
       return val;
     };
-    // 从地址的本地参数中删除一个参数
-    var del = function (key) {
-      var f = false;
-      if (typeof a === 'string') a = href2A(a);
-      var hash = ((a || location).hash || '#').slice(1).split('&').map(function (kv) {
-        var arg = kv.match(/^([^=]*)=(.*)$/);
-        if (!arg || !arg[2] || arg[1] != key) return kv;
-        f = true; return '';
-      }).filter(function (s) { return s.length > 0; });
-      return f;
-    };
-    return { 'get': get, 'set': set, 'del': del };
+    return { 'get': get, 'set': set };
   }());
 
   // 获取元素在页面上的位置
@@ -580,7 +570,7 @@ var cosmos = function () {
         try { f.apply(self, arg); } catch (e) { }
       });
     };
-    call.add = function (callback) { funcs.push(callback); }
+    call.add = function (callback) { funcs.push(callback); };
     return call;
   };
 
@@ -603,7 +593,7 @@ var cosmos = function () {
       var buttonList = msgbox.querySelectorAll('button');
       Array.apply(Array, buttonList).forEach(function (button, i) {
         button.addEventListener('click', buttons[i].click);
-      })
+      });
       return msgbox;
     };
     showMsg.gotCid = function (cid) {
@@ -697,7 +687,7 @@ var cosmos = function () {
       var timer = null, called = false;
       var done = function (timeout) {
         if (!timeout && timer) clearTimeout(timer);
-        if (timer !== null) { timer = null; call(next); };
+        if (timer !== null) { timer = null; call(next); }
       };
       var resp = function (cb) {
         return function () {
@@ -736,7 +726,7 @@ var cosmos = function () {
       var act = function (f, next) {
         if (done) return;
         remained--; processing++;
-        call(function () { callTimeout(f, iid, succ, err, next) });
+        call(function () { callTimeout(f, iid, succ, err, next); });
       };
       // 依次调用注册的函数
       (function tryGetId(i) {
@@ -755,7 +745,7 @@ var cosmos = function () {
     var data = {};
     var put = function (key, value) {
       if (!value) return null;
-      return data[key] = value;
+      return (data[key] = value);
     };
     var get = function (key, defaultValue) {
       var value = data[key];
@@ -763,7 +753,7 @@ var cosmos = function () {
       return data[key];
     };
     var del = function (key) { delete data[key]; };
-    var clear = function (key) { delete data; data = {}; }
+    var clear = function () { data = {}; };
     return { 'get': get, 'put': put, 'del': del, 'clear': clear };
   };
   var videoInfo = infoCache(), playurlInfo = infoCache();
@@ -814,7 +804,7 @@ var cosmos = function () {
     if (bilibili.config.cache_active) {
       // 开启了缓存
       return function (cacheKey) {
-        return caches[cacheKey] = caches[cacheKey] || cache(cacheKey);
+        return (caches[cacheKey] = caches[cacheKey] || cache(cacheKey));
       };
     } else {
       return function (cacheKey) {
@@ -923,7 +913,7 @@ var cosmos = function () {
         });
       });
     };
-    return bilibili.url.view.map(registGetCidByApi)
+    return bilibili.url.view.map(registGetCidByApi);
   }(getCidDirect, getCidCache, getAidCache));
 
   // 通过提供给播放器以自动下一分页的接口获取cid
@@ -942,7 +932,7 @@ var cosmos = function () {
             });
             getCidCache.put(String(id.aid), cids);
             if (id.pid) cid = cids[id.pid]; else cid = cids;
-          } catch (e) { data = {}; };
+          } catch (e) { data = {}; }
           if (cid) call(function () { onsucc(cid); });
           else call(onerror);
           debug('Got cid = %s by using pagelist', JSON.stringify(cid));
@@ -963,7 +953,7 @@ var cosmos = function () {
         'url': genURL(bilibili.url.html5, { 'aid': id.aid, 'pid': id.pid }),
         'onload': function (resp) {
           var data;
-          try { data = JSON.parse(resp.responseText); } catch (e) { data = {}; };
+          try { data = JSON.parse(resp.responseText); } catch (e) { data = {}; }
           var cid = Number((data.cid || '').replace(/^[^\d]*(\d+)[^\d]*$/, '$1'));
           if (cid) {
             getAidCache.put(String(cid), { 'aid': id.aid, 'pid': id.pid });
@@ -1071,7 +1061,7 @@ var cosmos = function () {
             if (!nextCid.length) nextCid = [lastCid[0] + 2];
             if (!lastCid.length) lastCid = [nextCid[0] - 2];
             // 基于假设：cid和aid正相关，且大多数情况下有 cid[i] > cid[j] iff aid[i] > aid[j]
-            var nm, lm, m;
+            var nm, lm;
             // 去掉右侧比左侧所有数字都小的，和左侧比右侧所有数字都大的
             nm = Math.max.apply(Math, nextCid); lm = Math.min.apply(Math, lastCid);
             nextCid = filterGL(nextCid, lm, Infinity); lastCid = filterGL(lastCid, -Infinity, nm);
@@ -1190,14 +1180,14 @@ var cosmos = function () {
               // 如果一个cid不对应aid，但是对应了视频，那就说明这个cid曾经是有效的
               candidateCidLoading--;
               candidateCid.push(currentCid);
-              getAidCache.put(currentCid, {'aid': 0, 'pid': 0});
+              getAidCache.put(currentCid, { 'aid': 0, 'pid': 0 });
               candidateLoadDone();
             }, function () {
               // 如果一个cid既不对应aid，又不对应视频，那么就是说这个cid是无效的
               candidateCidLoading--;
-              getAidCache.put(currentCid, {'aid': null, 'pid': null});
+              getAidCache.put(currentCid, { 'aid': null, 'pid': null });
               candidateLoadDone();
-            })
+            });
           };
           if (networkCounter > bilibili.config.netmax) done();
           else if (currentCid <= 0) call(function () { tryFindCid(i + 1); });
@@ -1252,7 +1242,7 @@ var cosmos = function () {
     var findStyle = function (s) {
       return document.querySelector('script[src="' + s + '"]');
     };
-    var addStyle = function (s) {
+    var addScript = function (s) {
       var st = document.createElement('script'); st.src = s;
       document.querySelector('head').appendChild(st);
     };
@@ -1261,7 +1251,7 @@ var cosmos = function () {
       function () { location.href = bilibili.js.post; },
       function () { location.href = bilibili.js.float; },
     ].concat(bilibili.js.list.map(function (s) {
-      return function () { if (!findStyle(s)) addStyle(s); };
+      return function () { if (!findStyle(s)) addScript(s); };
     }));
     (function doFix(i) {
       if (i >= fixFunction.length) return;
@@ -1374,7 +1364,7 @@ var cosmos = function () {
       if (pages && pages[pid]) a.innerHTML = xmlEscape(pages[pid]);
       else a.innerHTML = xmlEscape((guess ? ' ? ' : String(pid)) + bilibili.text.split.pid + '(cid=' + cids[pid] + ')');
       a.href = genURL(bilibili.url.video, { 'host': bilibili.host, 'aid': aid, 'pid': pid });
-      return pa[pid] = a;
+      return (pa[pid] = a);
     });
     var showPage = function (pid) {
       var cid = cids[pid];
@@ -1405,7 +1395,7 @@ var cosmos = function () {
       fixFullWindow();
       if (!isNew) call(callback);
       call(function () { addedBofqi(title); });
-    }
+    };
     getTitle(aid, cb, function () { cb(''); });
   };
 
@@ -1425,7 +1415,7 @@ var cosmos = function () {
       location.reload();
     };
     if (hashArg.get('rbb') === 'false') showMsg(bilibili.text.disable.message, 12000, 'warning',
-      [{ 'value': bilibili.text.disable.redo, 'click': function () { setHash('#'); } }])
+      [{ 'value': bilibili.text.disable.redo, 'click': function () { setHash('#'); } }]);
     return function () { setHash('#rbb=false'); };
   }());
 
@@ -1443,9 +1433,9 @@ var cosmos = function () {
     var newBofqi = createNewBofqi(id.aid, cid);
     oldBofqi.parentNode.insertBefore(newBofqi, oldBofqi);
     if (keepold) {
-      oldBofqi.id = 'old-bofqi'
+      oldBofqi.id = 'old-bofqi';
     } else {
-      delete oldBofqi.parentNode.removeChild(oldBofqi);
+      oldBofqi.parentNode.removeChild(oldBofqi);
     }
     fixFullWindow();
     if (!keepold)
@@ -1476,7 +1466,7 @@ var cosmos = function () {
       'value': bilibili.text.force.rollback,
       'click': function () {
         var bofqi = document.querySelector('#bofqi');
-        delete bofqi.parentNode.removeChild(bofqi);
+        bofqi.parentNode.removeChild(bofqi);
         oldBofqi.id = 'bofqi';
         msg.parentNode.removeChild(msg);
       }
@@ -1486,7 +1476,7 @@ var cosmos = function () {
       'value': bilibili.text.force.done,
       'click': function () {
         msg.parentNode.removeChild(msg);
-        if (oldBofqi) delete oldBofqi.parentNode.removeChild(oldBofqi);
+        if (oldBofqi) oldBofqi.parentNode.removeChild(oldBofqi);
       }
     };
     var buttons = [reloadButton];
@@ -1521,7 +1511,6 @@ var cosmos = function () {
     getCid(id,
       function (cid) {
         var timer = null, cbd = false;
-        var checkDone = function () { if (timer) clearTimeout(timer); };
         var ccid = null;
         if (cid.constructor === Number) ccid = cid;
         else {
@@ -1540,7 +1529,7 @@ var cosmos = function () {
             cidReady(cid, function () { cb(cid); });
           }, bilibili.timeout.network);
           checkCid(ccid,
-            function (data) { cb(cid); },
+            function () { cb(cid); },
             function (msg) { cb(cid, msg || ''); });
         } else {
           // 如果对应了多个视频则不进行检查
@@ -1560,7 +1549,7 @@ var cosmos = function () {
           'method': 'GET',
           'url': genURL(bilibili.url.video, { 'aid': id.aid, 'pid': id.pids[i], 'host': bilibili.host }),
           'onload': function (resp) {
-            var doc = new DOMParser().parseFromString(resp.responseText, 'text/html')
+            var doc = new DOMParser().parseFromString(resp.responseText, 'text/html');
             if (isBilibiliBofqi(doc)) onsucc(id.pids[i]);
             else checkBofqi(i + 1);
           },
@@ -1581,7 +1570,7 @@ var cosmos = function () {
         id, function (cid, errormsg) {
           var ccid = [];
           getCurrentCid.gotCid(cid);
-          if (msgbox) { delete msgbox.parentNode.removeChild(msgbox); msgbox = null; };
+          if (msgbox) { msgbox.parentNode.removeChild(msgbox); msgbox = null; }
           if (!cid) {
             ccid = candidateCidInfo.get(id.aid);
             if (ccid && ccid.length) {
@@ -1608,7 +1597,6 @@ var cosmos = function () {
                 'click': function () {
                   if (!msgbox) return;
                   msgbox.parentNode.removeChild(msgbox);
-                  delete msgbox;
                 }
               }
               ]);
@@ -1650,14 +1638,14 @@ var cosmos = function () {
       if (!isRbb && sp) dy = -32;
       if (menu.clientWidth + position.x > document.body.clientWidth) {
         menu.style.right = (document.body.clientWidth - position.x - 8 + dx) + 'px';
-        menu.className += ' rbb-float-right'
+        menu.className += ' rbb-float-right';
       } else menu.style.left = (position.x - 8 + dx) + 'px';
       menu.style.top = (position.y - 6 + dy) + 'px';
       return menu;
     };
     // 隐藏菜单
     var hide = function (menu) {
-      delete menu.parentNode.removeChild(menu);
+      menu.parentNode.removeChild(menu);
     };
     // 检查某个元素是否在菜单内
     var contains = function (menu, obj) {
@@ -1698,8 +1686,8 @@ var cosmos = function () {
           if (msg) menu.setAttribute('message', 'message');
           else menu.removeAttribute('message');
         };
-        var hideMenu = function () { hide(menu); }
-        return { 'set': setMessage, 'hide': hide };
+        var hideMenu = function () { hide(menu); };
+        return { 'set': setMessage, 'hide': hideMenu };
       }());
     };
   }());
@@ -1708,7 +1696,7 @@ var cosmos = function () {
   var getPageInfo = function (aid, html) {
     var doc;
     try {
-      doc = new DOMParser().parseFromString(html, 'text/html')
+      doc = new DOMParser().parseFromString(html, 'text/html');
       var pages = doc.querySelectorAll('#dedepagetitles option');
       var nodedata = Array.apply(Array, pages).map(function (opt) {
         return [opt.innerHTML, opt.value];
@@ -1718,7 +1706,7 @@ var cosmos = function () {
         pageInfo.put(aid, {
           'title': title,
           'nodedata': nodedata,
-        })
+        });
       }
     } catch (e1) { }
     try {
@@ -1745,7 +1733,7 @@ var cosmos = function () {
       var wholeMenu = cids && inSite === false || !isOrigen;
       if (configMenu === 'complete') wholeMenu = true;
       var info = videoInfo.get(id.aid) || {};
-      var page = pageInfo.get(id.aid) || {};
+      var pinfo = pageInfo.get(id.aid) || {};
       var rbb = {
         'aid': id.aid,
         'cids': {},
@@ -1754,7 +1742,7 @@ var cosmos = function () {
         'mid': info.mid || 0,
         'author': info.author || '',
         'tag': (info.tag || '').split(','),
-        'title': info.title || page.title || a.textContent || '',
+        'title': info.title || pinfo.title || a.textContent || '',
         'spid': info.spid || 0,
         'season_id': info.season_id || 0,
       };
@@ -1763,25 +1751,25 @@ var cosmos = function () {
           rbb.cids[info.list[i].page] = info.list[i].cid;
           rbb.pages[info.list[i].page] = info.list[i].part;
         });
-      } else if (page.nodedata && !wholeMenu) {
-        if (page.nodedata.length === 0) {
+      } else if (pinfo.nodedata && !wholeMenu) {
+        if (pinfo.nodedata.length === 0) {
           rbb.pages[1] = '';
           rbb.cids[1] = null;
-        } else page.nodedata.map(function (nodedata, i) {
+        } else pinfo.nodedata.map(function (nodedata, i) {
           rbb.pages[i + 1] = nodedata[0];
           rbb.cids[i + 1] = null;
         });
       } else if (cids) {
         Object.keys(cids).map(function (pid) {
-          rbb.pages[pid] = ((page.nodedata || [])[pid - 1] || {})[0] || '';
+          rbb.pages[pid] = ((pinfo.nodedata || [])[pid - 1] || {})[0] || '';
           rbb.cids[pid] = cids[pid];
         });
       } else {
-        return menu = choseMenu([{
+        return (menu = choseMenu([{
           'title': bilibili.text.fail.default,
           'href': a.href,
           'submenu': [],
-        }], null, position);
+        }], null, position));
       }
       var pids = Object.keys(rbb.cids).map(Number)
         .sort(function (x, y) { return x - y; });
@@ -1806,7 +1794,7 @@ var cosmos = function () {
           'title': title,
           'href': href_p(pids[0]),
           'submenu': [],
-        }
+        };
       };
       // 生成页面
       var pageLink = function (pid) {
@@ -1821,7 +1809,6 @@ var cosmos = function () {
       };
       // 原始页面
       var origenLink = function (pid) {
-        var link = a.href;
         var id = videoPage(a.href);
         return genURL(bilibili.url.video, { 'aid': id.aid, 'pid': pid }) + a.search + a.hash;
       };
@@ -1842,7 +1829,7 @@ var cosmos = function () {
       }
       // 专题
       var sp = spInfo.get(id.aid) || undefined;
-      return menu = choseMenu(menuItems, sp, position);
+      return (menu = choseMenu(menuItems, sp, position));
     };
     var updateMenu = function (cids, errormsg, inSite, isOrigen) {
       if (!menu) initMenu(cids, inSite, isOrigen);
@@ -1858,7 +1845,7 @@ var cosmos = function () {
           updateMenu(cids, undefined, inSite, isOrigen);
         }, function () {
           updateMenu();
-        })
+        });
       } else {
         // 如果发现会自动跳转到其他网站或无法获取host信息，则查找cid，试图在B站内播放
         getValidCid(getCidDirect.concat(getCidCached), id, function (cids, message) {
@@ -1874,21 +1861,22 @@ var cosmos = function () {
       'url': a.href,
       'onload': function (resp) {
         getPageInfo(id.aid, resp.responseText);
+        var doc;
         // 检查视频跳转
         try {
           if (typeof resp.finalUrl === 'undefined') {
-            var doc = new DOMParser().parseFromString(resp.responseText, 'text/html')
+            doc = new DOMParser().parseFromString(resp.responseText, 'text/html');
             checkHost(undefined, isBilibiliBofqi(doc));
           } else {
             var host = getHost(resp.finalUrl);
             var inSite = host && bilibili.url.host.indexOf(host) !== -1;
-            var doc = new DOMParser().parseFromString(resp.responseText, 'text/html')
+            doc = new DOMParser().parseFromString(resp.responseText, 'text/html');
             if (!hasBofqi(doc)) inSite = false;
             checkHost(inSite, isBilibiliBofqi(doc));
           }
         } catch (e) { checkHost(); }
       },
-      'onerror': function (resp) { checkHost(); }
+      'onerror': function () { checkHost(); }
     });
   };
 
@@ -2014,7 +2002,7 @@ var cosmos = function () {
         'spurl': '/sp/' + encodeURIComponent(spInfo.title),
         'bangumi': bgmInfo.count,
         'relative': spInfo.count - bgmInfo.count,
-      })
+      });
       new unsafeWindow.bbBangumiSp(id.aid, sp.spid, 0, encodeURIComponent(spInfo.title));
     };
 
@@ -2042,10 +2030,9 @@ var cosmos = function () {
         'title': xmlEscape(rbb.title),
         'description': xmlEscape(rbb.description),
         'kwtags': rbb.tag.join(','),
-        'title': xmlEscape(rbb.title),
       });
       var callback = function () { };
-      var doc = new DOMParser().parseFromString(content, 'text/html')
+      var doc = new DOMParser().parseFromString(content, 'text/html');
       var old = replaceDocument(doc, function () { callback(); });
       var getNode = function (qs) {
         var obj = old.querySelector(qs);
@@ -2059,7 +2046,9 @@ var cosmos = function () {
         ['.footer'].map(getNode).forEach(function (obj) {
           z.parentNode.appendChild(obj);
         });
-      } catch (e) { }
+      } catch (e) {
+        debug('Error while add elements: %o', e);
+      }
       window.addEventListener('load', function () {
         var i, o;
         document.querySelector('.tag').innerHTML = '';
@@ -2079,8 +2068,10 @@ var cosmos = function () {
       });
       addPages(rbb.aid, rbb.cids, rbb.pages, rbb.pid || Object.keys(rbb.pages)[0]);
       if (rbb.spid) callback = showBgmInfo(rbb);
-    } catch (e) { }
-    GM_addStyle('html { display: block !important; }')
+    } catch (e) {
+      debug('Error while replacing page: %o', e);
+    }
+    GM_addStyle('html { display: block !important; }');
   }());
 
   // 向unsafeWindow暴露一系列接口以供其他函数调用
@@ -2093,9 +2084,9 @@ var cosmos = function () {
       } catch (e) {
         debug("Failed to call handler %s with arguments %o", funcName, args);
         debug("Error message: %s", e);
-      };
+      }
     };
-    handler.regist = function (funcName, func) { return funcs[funcName] = func; };
+    handler.regist = function (funcName, func) { return (funcs[funcName] = func); };
     return handler;
   }());
 
@@ -2211,10 +2202,81 @@ var cosmos = function () {
     return x;
   }());
 
+
+  addStyle();
+
 };
 
 if (!document.body) document.addEventListener('DOMContentLoaded', cosmos);
 else setTimeout(cosmos, 0);
+
+// 修正新番列表中部分视频不显示的问题
+(function fixBangumiTwoList() {
+  var r = location.href.match(/http:\/\/[^\/]*\/video\/bangumi-two-(\d+).html/);
+  if (!r || !r[1]) return;
+  // 先隐藏已有的新番列表
+  GM_addStyle('.video_list ul.vd_list { visibility: hidden; }')
+  var loaded = !!document.body, data = null;
+  // 检查文档树是否已经被解析出
+  if (!loaded) document.addEventListener('DOMContentLoaded', function () {
+    loaded = true;
+    active();
+  });
+  var showList = function () {
+    GM_addStyle('.video_list ul.vd_list { visibility: visible; }')
+  };
+  // 将获取的数据添加到网页上
+  var addList = function () {
+    var i;
+    var ul = document.createElement('ul');
+    ul.className = 'vd_list';
+    var listtype = document.querySelector('.vd_list li').className;
+    for (i = 0; i < 24; i++) (function (video) {
+      var c = document.createElement('ul');
+      c.innerHTML = [
+        '<li class="', listtype, '">',
+          '<a class="preview" target="_blank" href="/video/av', video.aid, '/">',
+            '<img src="', video.pic, '">',
+          '</a>',
+          '<a class="title" target="_blank" href="/video/av', video.aid, '/">', video.title, '</a>',
+          '<div class="w_info">',
+            '<i class="gk" title="观看">', video.play, '</i>',
+            '<i class="sc" title="收藏">', video.favorites, '</i>',
+            '<i class="dm" title="弹幕">', video.video_review, '</i>',
+            '<i class="date" title="日期">', video.create, '</i>',
+          '</div>',
+          '<div class="info">', video.description, '</div>',
+          '<a class="up r10000" target="_blank" href="http://space.bilibili.tv/', video.mid, '">', video.author, '</a>',
+        '</li>',
+      ].join('');
+      ul.appendChild(c.firstChild);
+    }(data[i]));
+    var cnt = document.querySelector('.video_list .vd_list_cnt');
+    cnt.removeChild(cnt.firstChild);
+    cnt.insertBefore(ul, cnt.firstChild);
+  };
+
+  var active = function () {
+    if (!loaded || !data) return;
+    try { addList(); } catch (e) { }
+    showList();
+  };
+
+  // 使用手机的API获取数据
+  GM_xmlhttpRequest({
+    'method': 'GET',
+    'url': 'http://api.bilibili.cn/list?pagesize=24&type=json&page=' + r[1] +
+      '&ios=0&order=default&appkey=0a99fa1d87fdd38c&platform=ios&tid=33',
+    'headers': { 'User-Agent': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0' },
+    'onload': function (resp) {
+      try { data = JSON.parse(resp.responseText).list; }
+      catch (e) { showList(); }
+      active();
+    },
+    'onerror': showList,
+  });
+
+}());
 
 var addStyle = function () {
   GM_addStyle([

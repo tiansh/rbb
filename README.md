@@ -88,6 +88,12 @@ spview中的bangumi参数为0/1用于区分是所属番剧还是相关视频。
 这两个API似乎不需要appkey的样子……
 
 
+## 完整版新番列表 ##
+
+新番列表隐藏了部分视频，如果需要完整版新番列表，需要通过手机的加载方式获取。
+<code>http://api.bilibili.cn/list?pagesize=24&type=json&page=1&ios=0&order=default&appkey=0a99fa1d87fdd38c&platform=ios&tid=33</code>。
+
+
 ## 脚本接口 ##
 
 其他脚本使用本脚本接口的方法
