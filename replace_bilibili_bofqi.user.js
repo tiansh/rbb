@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.33
+// @version     2.34
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -24,7 +24,7 @@
 var config = {
   'debug': null, // 是否打印调试信息（Boolean，默认false）
   'cache_active': null, // 是否使用磁盘缓存（Boolean，默认true）
-  'cache_maxsize': null, // 缓存最大条目数 （Number，默认10000）
+  'cache_maxsize': null, // 缓存最大条目数 （Number，默认1000）
   'check': null, // 是否检查替换后是否能正常播放（Boolean，默认true）
   'export': null, // 是否向外部暴露接口（Boolean，默认true）
   'netmax': null, // 通过相邻视频推测时最多检查多少个视频（Number，默认50）
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.34 ：直接外站跳转或404的视频长按菜单也有专题链接了，404上生成的页面支持视频描述和标签等
    * 2.33 ：二次元新番列表显示隐藏的视频
    * 2.32 ：修理对页面广告的兼容性（因为我一直在用ABP所以没发现）
    * 2.31 ：播放页面500也可以播给你看！
@@ -113,6 +114,7 @@ var cosmos = function () {
       'sp': {
         'spview': 'http://api.bilibili.cn/spview?spid={spid}&season_id={season_id}&bangumi=1',
         'spid': 'http://api.bilibili.tv/sp?spid={spid}',
+        'page': 'http://www.bilibili.tv/sp/{title}',
       },
       'view': [
         { // 网页Flash播放器的passkey （batch参数是额外加上去的）
@@ -439,7 +441,7 @@ var cosmos = function () {
     var defaultConfig = {
       'debug': false,
       'cache_active': true,
-      'cache_maxsize': 10000,
+      'cache_maxsize': 1000,
       'check': true,
       'export': true,
       'netmax': 50,
@@ -757,7 +759,7 @@ var cosmos = function () {
     return { 'get': get, 'put': put, 'del': del, 'clear': clear };
   };
   var videoInfo = infoCache(), playurlInfo = infoCache();
-  var pageInfo = infoCache(), spInfo = infoCache();
+  var pageInfo = infoCache(), videoSpInfo = infoCache();
   var candidateCidInfo = infoCache();
 
   // 文件信息缓存
@@ -1387,6 +1389,36 @@ var cosmos = function () {
     return pids;
   };
 
+  var fixBgmInfo = function (id) {
+    var bgm_list = document.querySelector('.v_bgm_list');
+    if (!bgm_list) return;
+    if (bgm_list.querySelector('.info .detail .t')) return;
+    var video = videoInfo.get(id.aid);
+    showBgmInfo({
+      'spid': video.spid,
+      'season_id': video.season_id,
+      'aid': id.aid,
+    }, true);
+  };
+
+  var fixTagDescription = function (id) {
+    var info = videoInfo.get(id.aid);
+    if (!info) return;
+    if (info.description) document.querySelector('.s_center .s_div .intro').textContent = info.description;
+    if (id.aid && info.mid && info.spid && info.tag) try {
+      unsafeWindow.aid = String(id.aid);
+      unsafeWindow.mid = String(info.mid);
+      unsafeWindow.spid = Number(info.spid);
+      unsafeWindow.kwtags((info.tag || '').split(','), []);
+    } catch (e) { }
+  };
+
+  // 添加的页面中完善相关信息
+  var fixAddedPage = function (id) {
+    fixBgmInfo(id);
+    fixTagDescription(id);
+  };
+
   var addedBofqi = callbackEvents();
   // 添加播放器标题等页面相关元素
   var addBofqi = function (aid, callback) {
@@ -1486,7 +1518,7 @@ var cosmos = function () {
   };
 
   // 处理检查cid是否可用出错时的情况
-  var checkCidFail = function (id, cid, msg) {
+  var checkCidFail = function (id, cid, msg, force) {
     var videoSource = getVideoSource(id, cid);
     var addField = function (s) {
       return s.replace('{source}', videoSource.name)
@@ -1497,11 +1529,7 @@ var cosmos = function () {
     else msg = addField(bilibili.text.fail.msg);
     var msgbox = showMsg(msg, 50000, 'error', [{
       'value': bilibili.text.force.replace.replace('{source}', videoSource),
-      'click': function () {
-        var oldBofqi = replaceBofqi(id, cid, true);
-        replacedMenu(oldBofqi);
-        msgbox.parentNode.removeChild(msgbox);
-      }
+      'click': force,
     }]);
     debug('Failed on checking cid with msg %s', msg);
   };
@@ -1564,8 +1592,14 @@ var cosmos = function () {
   // 主程序在这里
   (function mina() {
     var id = validPage(); if (!id) return;
+    var isAdded = !hasBofqi(document);
     var act = function () {
       var msgbox = null, ignore = false;
+      var doReplace = function (cid) {
+        var oldBofqi = replaceBofqi(id, cid, ignore);
+        if (ignore) replacedMenu(oldBofqi);
+        if (isAdded) fixAddedPage(id);
+      };
       getValidCid(getCidDirect.concat(getCidCached).concat(getCidUndirect),
         id, function (cid, errormsg) {
           var ccid = [];
@@ -1579,10 +1613,13 @@ var cosmos = function () {
             } else {
               showMsg(bilibili.text.fail.get, 12000, 'error');
             }
-          } else if (typeof errormsg !== 'undefined') checkCidFail(id, cid, errormsg);
-          else {
-            var oldBofqi = replaceBofqi(id, cid, ignore);
-            if (ignore) replacedMenu(oldBofqi);
+          } else if (typeof errormsg !== 'undefined') {
+            checkCidFail(id, cid, errormsg, function () {
+              doReplace(cid);
+              msgbox.parentNode.removeChild(msgbox);
+            });
+          } else {
+            doReplace(cid);
           }
         }, function (cid, ignoreCheck) {
           getCurrentCid.gotCid(cid);
@@ -1602,7 +1639,7 @@ var cosmos = function () {
               ]);
         });
     };
-    if (!hasBofqi(document)) addBofqi(id.aid, act);
+    if (isAdded) addBofqi(id.aid, act);
     else act();
   }());
 
@@ -1714,9 +1751,9 @@ var cosmos = function () {
       if (spo) {
         var sp = {
           'title': spo.textContent,
-          'href': spo.getAttribute('href'), // 为什么Chrome不能直接“.href”？？
+          'href': spo.getAttribute('href'),
         };
-        spInfo.put(aid, sp);
+        videoSpInfo.put(aid, sp);
       }
     } catch (e2) { }
   };
@@ -1744,6 +1781,7 @@ var cosmos = function () {
         'tag': (info.tag || '').split(','),
         'title': info.title || pinfo.title || a.textContent || '',
         'spid': info.spid || 0,
+        'sp_title': info.sp_title || null,
         'season_id': info.season_id || 0,
       };
       if (info.list) {
@@ -1828,7 +1866,11 @@ var cosmos = function () {
           bilibili.text.menu.chose : bilibili.text.menu.origen);
       }
       // 专题
-      var sp = spInfo.get(id.aid) || undefined;
+      var sp = videoSpInfo.get(id.aid) || undefined;
+      if (!sp && rbb.spid && rbb.sp_title) sp = {
+        'title': rbb.sp_title,
+        'href': genURL(bilibili.url.sp.page, {'title': rbb.sp_title}),
+      };
       return (menu = choseMenu(menuItems, sp, position));
     };
     var updateMenu = function (cids, errormsg, inSite, isOrigen) {
@@ -1951,7 +1993,7 @@ var cosmos = function () {
   };
 
   // 显示新番相关信息（用于生成的页面）
-  var showBgmInfo = function (id) {
+  var showBgmInfo = function (id, pre_leaded) {
     var done = 0, spInfo = null, bgmInfo = null;
     var doneCallback = null, errorCallback;
     var sp = {'spid': id.spid, 'season_id': id.season_id};
@@ -2003,7 +2045,11 @@ var cosmos = function () {
         'bangumi': bgmInfo.count,
         'relative': spInfo.count - bgmInfo.count,
       });
-      new unsafeWindow.bbBangumiSp(id.aid, sp.spid, 0, encodeURIComponent(spInfo.title));
+      try {
+        new unsafeWindow.bbBangumiSp(id.aid, sp.spid, 0, encodeURIComponent(spInfo.title));
+      } catch (e) {
+        debug('Error while adding Bgm info: %o', e);
+      }
     };
 
     errorCallback = function () { };
@@ -2011,11 +2057,11 @@ var cosmos = function () {
     getBgmInfo();
     getSpInfo();
 
-    var scriptLoaded = false;
-    return function () {
+    var scriptLoaded = pre_leaded || false;
+    if (!scriptLoaded) return function () {
       if (!scriptLoaded && done >= 0) load(++done);
       scriptLoaded = true;
-    };
+    }; else ++done;
 
   };
 
@@ -2029,7 +2075,8 @@ var cosmos = function () {
         'mid': rbb.mid,
         'title': xmlEscape(rbb.title),
         'description': xmlEscape(rbb.description),
-        'kwtags': rbb.tag.join(','),
+        'kwtags': JSON.stringify(rbb.tag),
+        'spid': rbb.spid,
       });
       var callback = function () { };
       var doc = new DOMParser().parseFromString(content, 'text/html');
