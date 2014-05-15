@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.34
+// @version     2.35
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.35 ：修理无法找到不对应aid的视频的问题（#2）
    * 2.34 ：直接外站跳转或404的视频长按菜单也有专题链接了，404上生成的页面支持视频描述和标签等
    * 2.33 ：二次元新番列表显示隐藏的视频
    * 2.32 ：修理对页面广告的兼容性（因为我一直在用ABP所以没发现）
@@ -1161,6 +1162,7 @@ var cosmos = function () {
             if (re & 1) currentCid = lastCid[lastCid.length - 1] - (re >> 1) - 1;
             else currentCid = nextCid[nextCid.length - 1] + (re >> 1) + 1;
           }
+          if (currentCid <= 0) return tryFindCid(i + 1);
           // 找到对应的aid
           var onsucc = function (rid) {
             if (this === getAidByInterface) networkCounter++;
@@ -1174,7 +1176,6 @@ var cosmos = function () {
           };
           // 没找到对应的aid
           var onerror = function () {
-            if (currentCid < 0)
             candidateCidLoading++;
             if (Object.keys(cid).length) failCount++;
             call(function () { tryFindCid(i + 1); });
@@ -1401,10 +1402,14 @@ var cosmos = function () {
     }, true);
   };
 
-  var fixTagDescription = function (id) {
+  var fixVideoInfos = function (id) {
     var info = videoInfo.get(id.aid);
     if (!info) return;
     if (info.description) document.querySelector('.s_center .s_div .intro').textContent = info.description;
+    if (info.title) {
+      document.querySelector('.viewbox h2').setAttribute('title', info.title);
+      document.querySelector('.viewbox h2').textContent = info.title;
+    }
     if (id.aid && info.mid && info.spid && info.tag) try {
       unsafeWindow.aid = String(id.aid);
       unsafeWindow.mid = String(info.mid);
@@ -1416,7 +1421,7 @@ var cosmos = function () {
   // 添加的页面中完善相关信息
   var fixAddedPage = function (id) {
     fixBgmInfo(id);
-    fixTagDescription(id);
+    fixVideoInfos(id);
   };
 
   var addedBofqi = callbackEvents();
