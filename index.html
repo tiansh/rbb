@@ -16,6 +16,7 @@
     a img { border: none; }
     .lazy { visibility: hidden; }
     h1 { color:#D95E7F; font-size: 40px; line-height: 60px; margin: 40px 0 20px 0; padding: 0; font-weight: bold; }
+    #version { color: #ccc; float: right; font-size: 20px; line-height: 60px; margin-top: -70px; }
     header { display: block; height: 200px; }
     header li { list-style: none; }
     #intro { border: 2px solid #F25D8E; float: left; height: 120px; line-height: 30px; font-size: 20px; padding: 18px; background: #f8f8f8; border-radius: 8px; margin-left: 30px; color: #333; }
@@ -27,8 +28,9 @@
     #report1, #report2 { height: 80px; width: 48%; display: block; }
     #report1 { float: left; }
     #report2 { float: right; }
-    #report a { width: 100%; background: #e1e1e1; display: block; height: 40px; line-height: 40px; color: #aaa; text-align: center; }
-    #report a:hover { background: #fdb4c8; color: #fff; }
+    #report a { color: #aaa; text-decoration: underline; }
+    #report .subbut { text-decoration: none; width: 100%; background: #e1e1e1; display: block; height: 40px; line-height: 40px; color: #aaa; text-align: center; }
+    #report .subbut:hover { background: #fdb4c8; color: #fff; }
     #report span { width: 100%; text-align: center; display: block; line-height: 30px; color: #aaa; }
     #install_instruct h3 { margin }
     h3 { font-size: 24px; font-weight: bold; border-bottom: 2px #ccc solid; padding: 10px 20px; margin: 20px 0 10px; }
@@ -79,8 +81,9 @@
   </script>
 </head>
 <body>
-<div id="main-body">
-  <h1>Replace bilibili bofqi</h1>
+<div id="main-body" itemscope itemtype="http://schema.org/SoftwareApplication">
+  <h1 itemprop="name">Replace bilibili bofqi</h1>
+  <div id="version">最新版本：<span itemprop="softwareVersion">2.35</span></div>
   <header>
     <ul id="intro">
       <li><strong>替换bilibili播放器为原生播放器</strong></li>
@@ -89,14 +92,14 @@
       <li><strong>不访问第三方的服务器</strong>，保障隐私安全</li>
     </ul>
     <div id="side-buttons">
-      <a id="install" href="https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js">安装脚本</a>
+      <a id="install" itemprop="downloadUrl" href="https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js">安装脚本</a>
       <div id="report">
         <div id="report1">
-          <a href="https://github.com/tiansh/rbb/issues" target="_blank">报告Bug</a>
-          <span>在github上报告错误</span>
+          <a class="subbut" href="https://github.com/tiansh/rbb/issues" target="_blank">报告Bug</a>
+          <span><a href="https://github.com/tiansh/rbb/">GitHub页面</a>上报告错误</span>
         </div>
         <div id="report2">
-          <a href="http://member.bilibili.tv/#message?mid=1378109" target="_blank">私信我</a>
+          <a class="subbut" href="http://member.bilibili.tv/#message?mid=1378109" target="_blank">私信我</a>
           <span>在bilibili上私信作者</span>
         </div>
       </div>
@@ -151,11 +154,11 @@
   <h3>屏幕截图</h3>
   <div class="in">
     <figure>
-      <img class="lazy" alt="Replace bilibili bofqi 长按鼠标显示的菜单" src="img/screenshot/menu.png" width="640" height="250" />
+      <img itemprop="screenshot" class="lazy" alt="Replace bilibili bofqi 长按鼠标显示的菜单" src="img/screenshot/menu.png" width="640" height="250" />
       <figcaption>Replace bilibili bofqi 长按视频链接可以出现选择播放位置的菜单，适用于直接跳转到外站的视频</figcaption>
     </figure>
     <figure>
-      <a target="_blank" href="img/screenshot/replace.png"><img class="lazy" alt="Replace bilibili bofqi 成功替换播放器" src="img/screenshot/replace.png" width="640" height="152" /></a>
+      <a target="_blank" href="img/screenshot/replace.png"><img itemprop="screenshot" class="lazy" alt="Replace bilibili bofqi 成功替换播放器" src="img/screenshot/replace.png" width="640" height="152" /></a>
       <figcaption>Replace bilibili bofqi 检测到替换播放器可以正常播放后会自动替换播放器</figcaption>
     </figure>
   </div>
@@ -246,9 +249,9 @@
 
   <h3>关于</h3>
   <div class="in">
-    <div class="p">本脚本最早发布在 http://userscripts.org/scripts/show/176946 ，因为userscripts网站比较不稳定，现在主页搬移到了 https://tiansh.github.io/rbb/ 。</div>
+    <div class="p">作者：<span itemprop="author" itemscope itemtype="http://schema.org/Person"> <span itemprop="name">田生</span></span>；我的B站ID：<a href="http://space.bilibili.tv/1378109/list.html">ts9(1378109)</a>。</div>
     <div class="p">脚本使用 GNU GPL v3 和 CC BY-SA 3.0 协议发布，你可以选择合适的协议使用和继续发布。</div>
-    <div class="p">我的B站ID：<a href="http://space.bilibili.tv/1378109/list.html">ts9(1378109)</a></div>
+    <div class="p">本脚本最早发布在 http://userscripts.org/scripts/show/176946 ，因为userscripts网站比较不稳定，现在主页搬移到了 https://tiansh.github.io/rbb/ 。</div>
   </div>
 
   <h3>我的其他几个bilibili脚本</h3>
