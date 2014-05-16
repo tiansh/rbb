@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.35
+// @version     2.36
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.36 ：二次元新番列表显示对手机隐藏的视频
    * 2.35 ：修理无法找到不对应aid的视频的问题（#2）
    * 2.34 ：直接外站跳转或404的视频长按菜单也有专题链接了，404上生成的页面支持视频描述和标签等
    * 2.33 ：二次元新番列表显示隐藏的视频
@@ -99,50 +100,49 @@ var cosmos = function () {
         'http://www.bilibili.cn/video/av',
         'http://acg.tv/av',
       ],
-      'video': 'http://{host}/video/av{aid}/index_{pid}.html',
+      'video': 'http://{{host}}/video/av{{aid}}/index_{{pid}}.html',
       'iframe': {
         'secure': 'https://secure.bilibili.tv/secure,',
         'ssl': 'https://ssl.bilibili.tv/secure,',
       },
-      'bofqi': 'https://secure.bilibili.tv/secure,cid={cid}&aid={aid}',
+      'bofqi': 'https://secure.bilibili.tv/secure,cid={{cid}}&aid={{aid}}',
       'flash': [
         'https://static-s.bilibili.tv/play.swf',
         'https://static-s.bilibili.tv/live-play.swf',
         'http://static.hdslb.com/play.swf',
         'http://static.hdslb.com/live-play.swf',
       ],
-      'bflash': 'https://static-s.bilibili.tv/play.swf?cid={cid}&aid={aid}',
+      'bflash': 'https://static-s.bilibili.tv/play.swf?cid={{cid}}&aid={{aid}}',
       'sp': {
-        'spview': 'http://api.bilibili.cn/spview?spid={spid}&season_id={season_id}&bangumi=1',
-        'spid': 'http://api.bilibili.tv/sp?spid={spid}',
-        'page': 'http://www.bilibili.tv/sp/{title}',
+        'spview': 'http://api.bilibili.cn/spview?spid={{spid}}&season_id={{season_id}}&bangumi=1',
+        'spid': 'http://api.bilibili.tv/sp?spid={{spid}}',
+        'page': 'http://www.bilibili.tv/sp/{{title}}',
       },
       'view': [
         { // 网页Flash播放器的passkey （batch参数是额外加上去的）
-          'url': 'http://api.bilibili.cn/view?type=json&id={aid}&batch=1&appkey=8e9fc618fbd41e28',
+          'url': 'http://api.bilibili.cn/view?type=json&id={{aid}}&batch=1&appkey=8e9fc618fbd41e28',
           'ua': navigator.userAgent,
         },
         { // 手机客户端的passkey（苹果系统与安卓系统的区别在于platform参数和userAgent）
-          'url': 'http://api.bilibili.cn/view?type=json&id={aid}&batch=1' +
+          'url': 'http://api.bilibili.cn/view?type=json&id={{aid}}&batch=1' +
             '&platform=ios&appkey=0a99fa1d87fdd38c',
           'ua': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0',
         },
       ],
-      'playurl': 'http://interface.bilibili.cn/playurl?cid={cid}',
-      'player': 'http://interface.bilibili.cn/player?id=cid:{cid}',
-      'page_arc': 'http://static.hdslb.com/js/page.arc.js',
-      'suggest': 'http://www.bilibili.tv/suggest?term=av{aid}' +
-        '&jsoncallback={callback}&rnd={random}&_={date}',
-      'html5': 'http://www.bilibili.tv/m/html5?aid={aid}&page={pid}',
-      'pagelist': 'http://www.bilibili.tv/widget/getPageList?aid={aid}',
+      'playurl': 'http://interface.bilibili.cn/playurl?cid={{cid}}',
+      'player': 'http://interface.bilibili.cn/player?id=cid:{{cid}}',
+      'suggest': 'http://www.bilibili.tv/suggest?term=av{{aid}}' +
+        '&jsoncallback={{callback}}&rnd={{random}}&_={{date}}',
+      'html5': 'http://www.bilibili.tv/m/html5?aid={{aid}}&page={{pid}}',
+      'pagelist': 'http://www.bilibili.tv/widget/getPageList?aid={{aid}}',
     },
     'text': {
       'fail': {
         'get': '获取cid失败，若刷新对此无效则可能对该视频无效。',
         'getc': '获取cid失败，若刷新对此无效则可能对该视频无效。顺便找到了一些附近的隐藏视频……',
-        'check': '无法替换播放器，（网络访问出错或原视频链接已失效）；视频源：{source}。(cid:{cid})',
-        'msg': '无法替换播放器，错误信息：{msg}；视频源：{source}。(cid:{cid})',
-        'unsupport': '无法替换{source}源的视频。{msg}(cid:{cid})',
+        'check': '无法替换播放器，（网络访问出错或原视频链接已失效）；视频源：{{source}}。(cid:{{cid}})',
+        'msg': '无法替换播放器，错误信息：{{msg}}；视频源：{{source}}。(cid:{{cid}})',
+        'unsupport': '无法替换{{source}}源的视频。{{msg}}(cid:{{cid}})',
         'default': '（加载失败）',
         'unexpect': '（无法解析的服务器返回）',
         'server': '（服务器太忙请重试）',
@@ -159,7 +159,7 @@ var cosmos = function () {
       },
       'loading': {
         'near': '正在试图通过相邻视频查找cid，需要一些时间，且可能不准确。',
-        'check': '已得到cid，检查加载视频地址… (cid:{cid})',
+        'check': '已得到cid，检查加载视频地址… (cid:{{cid}})',
         'checks': '加载视频地址…',
         'ignore': '跳过检查',
         'wait': '等待加载',
@@ -172,11 +172,11 @@ var cosmos = function () {
         'sp': '专题页',
       },
       'succ': {
-        'replace': '已成功替换播放器，若无法正常播放请刷新页面或禁用替换。视频源：{source}。(cid:{cid})',
-        'add': '已成功找到第{pid}分页，分页可能有缺少或错误。(cid:{cid})',
+        'replace': '已成功替换播放器，若无法正常播放请刷新页面或禁用替换。视频源：{{source}}。(cid:{{cid}})',
+        'add': '已成功找到第{{pid}}分页，分页可能有缺少或错误。(cid:{{cid}})',
         'rollback': '禁用替换',
       },
-      'title': '{title} - 哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili.tv',
+      'title': '{{title}} - 哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili.tv',
       'disable': {
         'message': '当前页面已禁用对播放器的替换。',
         'redo': '撤销禁用',
@@ -279,8 +279,8 @@ var cosmos = function () {
         '<html xmlns="http://www.w3.org/1999/xhtml">',
         '<head>',
         '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',
-          '<title>{title} - 哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili.tv</title>',
-          '<meta name="title" content="{title}" />',
+          '<title>{{title}} - 哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili.tv</title>',
+          '<meta name="title" content="{{title}}" />',
           '<link rel="stylesheet" ',
             'href="http://static.hdslb.com/images/jquery-ui/smoothness/jquery-ui.css" type="text/css">',
           '<link rel="stylesheet" href="http://static.hdslb.com/css/new_z.css" type="text/css" />',
@@ -297,12 +297,12 @@ var cosmos = function () {
           // 视频信息（仅标题）
           '<div class="viewbox">',
             '<div class="info">',
-              '<h2 title="{title}">{title}</h2><div class="arcrank"></div>',
+              '<h2 title="{{title}}">{{title}}</h2><div class="arcrank"></div>',
               '<div class="tminfo" xmlns:v="http://rdf.data-vocabulary.org/#">&nbsp;</div>',
               '<div class="sf">',
-                '<a href="/ass/{aid}.html" class="ass" target="_blank" id="assdown"></a>',
+                '<a href="/ass/{{aid}}.html" class="ass" target="_blank" id="assdown"></a>',
                 '<a onclick="goQuote();" class="f" style="visibility:hidden!important"></a>',
-                '<a href="http://www.bilibili.tv/m/stow?aid={aid}" onclick="return showStow({aid},this);" ',
+                '<a href="http://www.bilibili.tv/m/stow?aid={{aid}}" onclick="return showStow({{aid}},this);" ',
                   'class="s" target="_blank"></a>',
               '</div>',
               '<div class="stowbox"></div>',
@@ -326,11 +326,11 @@ var cosmos = function () {
               '<div class="s_tag">',
                 '<ul class="tag"></ul>',
                 '<span id="newtag">',
-                  '<a href="javascript:;" class="btn_w" onclick="return addNewTag({aid})">增加TAG</a>',
+                  '<a href="javascript:;" class="btn_w" onclick="return addNewTag({{aid}})">增加TAG</a>',
                 '</span>',
               '</div>',
               '<div class="intro">',
-                '{description}',
+                '{{description}}',
               '</div>',
             '</div>',
           '</div>',
@@ -341,7 +341,7 @@ var cosmos = function () {
               '<div class="comm">',
                 '<img src="http://static.hdslb.com/images/v2images/morecomm.gif" border="0" ',
                   'class="comm_open_btn" onClick="var fb = new bbFeedback(\'.comm\', \'arc\');',
-                  'fb.show({aid}, 1);" style="cursor:pointer" />',
+                  'fb.show({{aid}}, 1);" style="cursor:pointer" />',
               '</div>',
             '</div>',
             // 评分（功能不可用，该元素用于定位视频播放器）
@@ -351,12 +351,12 @@ var cosmos = function () {
         '</div>',
         // 更新页面上的标签信息
         '<script>',
-          'var aid=\'{aid}\', mid=\'{mid}\', spid=0;',
+          'var aid=\'{{aid}}\', mid=\'{{mid}}\', spid=0;',
           'var isSpAtt="0", isSpFav="0";',
-          '$(function () {<}',
-            'kwtags({kwtags},[]);',
-            'spid={spid}',
-          '{>});',
+          '$(function () {',
+            'kwtags({{kwtags}},[]);',
+            'spid={{spid}}',
+          '});',
         '</script>',
         '</body>',
         '</html>',
@@ -369,10 +369,10 @@ var cosmos = function () {
           '<div id="v_bgm_list_toggle"><span class="autoheight">查看更多</span></div>',
         '</div>',
         '<div class="info">',
-          '<img src="{spcover}" />',
+          '<img src="{{spcover}}" />',
           '<div class="detail">',
-            '<a class="t" href="{spurl}" target="_blank">{sptitle}</a>',
-            '<div class="i">总<b>{bangumi}</b>话 相关视频<b>{relative}</b>个</div>',
+            '<a class="t" href="{{spurl}}" target="_blank">{{sptitle}}</a>',
+            '<div class="i">总<b>{{bangumi}}</b>话 相关视频<b>{{relative}}</b>个</div>',
             '<div id="sp_dingyue"><p class="dy" onclick="subscribeSp(this,spid)">订阅</p></div>',
           '</div>',
         '</div>',
@@ -488,7 +488,7 @@ var cosmos = function () {
       });
     };
     return function (base, esc, datas) {
-      base = base.replace(/{([^}]*)}/g, function (o, i) {
+      base = base.replace(/{{([a-z]*)}}/g, function (o, i) {
         var ret = find(i, datas);
         if (ret === null) return ''; else return esc(ret);
       });
@@ -1462,8 +1462,8 @@ var cosmos = function () {
     if (typeof cid !== 'number') {
       var pids = addPages(id.aid, cid, {}, videoPage(location.href).pid || true);
       showMsg(bilibili.text.succ.add
-        .replace('{cid}', pids.map(function (pid) { return cid[pid]; }).join(', '))
-        .replace('{pid}', pids.join(', ')), 12000, 'info');
+        .replace('{{cid}}', pids.map(function (pid) { return cid[pid]; }).join(', '))
+        .replace('{{pid}}', pids.join(', ')), 12000, 'info');
       return;
     }
     var oldBofqi = document.querySelector('#bofqi');
@@ -1477,8 +1477,8 @@ var cosmos = function () {
     fixFullWindow();
     if (!keepold)
       showMsg(bilibili.text.succ.replace
-        .replace('{source}', getVideoSource(id, cid).name)
-        .replace('{cid}', JSON.stringify(cid)),
+        .replace('{{source}}', getVideoSource(id, cid).name)
+        .replace('{{cid}}', JSON.stringify(cid)),
         12000, 'info',
         [{ 'value': bilibili.text.succ.rollback, 'click': notReplaceBofqi }]);
     replacedBofqi(cid);
@@ -1526,14 +1526,14 @@ var cosmos = function () {
   var checkCidFail = function (id, cid, msg, force) {
     var videoSource = getVideoSource(id, cid);
     var addField = function (s) {
-      return s.replace('{source}', videoSource.name)
-        .replace('{cid}', JSON.stringify(cid)).replace('{msg}', msg || '');
+      return s.replace('{{source}}', videoSource.name)
+        .replace('{{cid}}', JSON.stringify(cid)).replace('{{msg}}', msg || '');
     };
     if (videoSource.unsupport) msg = addField(bilibili.text.fail.unsupport);
     else if (!msg) msg = addField(bilibili.text.fail.check);
     else msg = addField(bilibili.text.fail.msg);
     var msgbox = showMsg(msg, 50000, 'error', [{
-      'value': bilibili.text.force.replace.replace('{source}', videoSource),
+      'value': bilibili.text.force.replace.replace('{{source}}', videoSource),
       'click': force,
     }]);
     debug('Failed on checking cid with msg %s', msg);
@@ -1628,7 +1628,7 @@ var cosmos = function () {
           }
         }, function (cid, ignoreCheck) {
           getCurrentCid.gotCid(cid);
-          msgbox = showMsg(bilibili.text.loading.check.replace('{cid}', JSON.stringify(cid)),
+          msgbox = showMsg(bilibili.text.loading.check.replace('{{cid}}', JSON.stringify(cid)),
               1e9, 'warning', [{
                 'value': bilibili.text.loading.ignore,
                 'click': function () {
@@ -2263,7 +2263,23 @@ if (!document.body) document.addEventListener('DOMContentLoaded', cosmos);
 else setTimeout(cosmos, 0);
 
 // 修正新番列表中部分视频不显示的问题
+// Bilibili Show Hidden Bangumi
 (function fixBangumiTwoList() {
+
+  // 将数字转换成以万为单位计数的形式
+  // http://static.hdslb.com/js/base.core.v2.js
+  var formatFriendlyNumber = function (b) {
+    if ('number' === typeof b) b = String(b);
+    if (!(0 <= b.indexOf("\u4e07") || 0 <= b.indexOf(","))) {
+      return (b = parseInt(b)) ? 10000 <= b && (b = (b / 10000).toFixed(1) + "\u4e07") : b = "--", b
+    }
+  };
+  // 转义XML字符
+  var xmlEscape = function (s) {
+    return String(s).replace(/./g, function (c) { return '&#' + c.charCodeAt(0) + ';'; });
+  };
+
+
   var r = location.href.match(/http:\/\/[^\/]*\/video\/bangumi-two-(\d+).html/);
   if (!r || !r[1]) return;
   // 先隐藏已有的新番列表
@@ -2277,32 +2293,33 @@ else setTimeout(cosmos, 0);
   var showList = function () {
     GM_addStyle('.video_list ul.vd_list { visibility: visible; }')
   };
+
   // 将获取的数据添加到网页上
   var addList = function () {
     var i;
     var ul = document.createElement('ul');
     ul.className = 'vd_list';
     var listtype = document.querySelector('.vd_list li').className;
-    for (i = 0; i < 24; i++) (function (video) {
+    data.forEach(function (video) {
       var c = document.createElement('ul');
       c.innerHTML = [
         '<li class="', listtype, '">',
           '<a class="preview" target="_blank" href="/video/av', video.aid, '/">',
-            '<img src="', video.pic, '">',
+            '<img src="', xmlEscape(video.pic), '">',
           '</a>',
-          '<a class="title" target="_blank" href="/video/av', video.aid, '/">', video.title, '</a>',
+          '<a class="title" target="_blank" href="/video/av', video.aid, '/">', xmlEscape(video.title), '</a>',
           '<div class="w_info">',
-            '<i class="gk" title="观看">', video.play, '</i>',
-            '<i class="sc" title="收藏">', video.favorites, '</i>',
-            '<i class="dm" title="弹幕">', video.video_review, '</i>',
-            '<i class="date" title="日期">', video.create, '</i>',
+            '<i class="gk" title="观看">', formatFriendlyNumber(video.play), '</i>',
+            '<i class="sc" title="收藏">', formatFriendlyNumber(video.favorites), '</i>',
+            '<i class="dm" title="弹幕">', formatFriendlyNumber(video.video_review), '</i>',
+            '<i class="date" title="日期">', xmlEscape(video.create), '</i>',
           '</div>',
-          '<div class="info">', video.description, '</div>',
-          '<a class="up r10000" target="_blank" href="http://space.bilibili.tv/', video.mid, '">', video.author, '</a>',
+          '<div class="info">', xmlEscape(video.description), '</div>',
+          '<a class="up r10000" target="_blank" href="http://space.bilibili.tv/', video.mid, '">', xmlEscape(video.author), '</a>',
         '</li>',
       ].join('');
       ul.appendChild(c.firstChild);
-    }(data[i]));
+    });
     var cnt = document.querySelector('.video_list .vd_list_cnt');
     cnt.removeChild(cnt.firstChild);
     cnt.insertBefore(ul, cnt.firstChild);
@@ -2310,8 +2327,41 @@ else setTimeout(cosmos, 0);
 
   var active = function () {
     if (!loaded || !data) return;
+    data = mergeData(data);
     try { addList(); } catch (e) { }
     showList();
+  };
+
+  // 将返回的结果和页面上已有的视频拼合，显示尽可能多的视频
+  var mergeData = function (data) {
+    var cnt = Array.apply(Array, document.querySelectorAll('.vd_list li'));
+    var add2Data = function (video) {
+      var found = -1;
+      data.forEach(function (v, i) {
+        if (Number(v.aid) == Number(video.aid)) found = i;
+      });
+      if (found === -1) data.push(video);
+    };
+    cnt.forEach(function (li) {
+      try {
+        var qs = li.querySelector.bind(li);
+        var video = {
+          'aid': qs('.title').href.match(/\/av(\d+)/)[1],
+          'pic': qs('.preview img').src,
+          'title': qs('.title').textContent,
+          'play': qs('.gk').textContent,
+          'favorites': qs('.sc').textContent,
+          'video_review': qs('.dm').textContent,
+          'create': qs('.date').textContent,
+          'description': qs('.info').textContent,
+          'mid': qs('.up').href.match(/\/(\d+)/)[1],
+          'author': qs('.up').textContent,
+        };
+        add2Data(video);
+      } catch (e) { }
+    });
+    data.sort(function (x, y) { return Number(x.aid) < Number(y.aid); })
+    return data;
   };
 
   // 使用手机的API获取数据
@@ -2321,8 +2371,11 @@ else setTimeout(cosmos, 0);
       '&ios=0&order=default&appkey=0a99fa1d87fdd38c&platform=ios&tid=33',
     'headers': { 'User-Agent': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0' },
     'onload': function (resp) {
-      try { data = JSON.parse(resp.responseText).list; }
-      catch (e) { showList(); }
+      var respData, i;
+      try {
+        respData = JSON.parse(resp.responseText).list;
+        for (data = [], i = 0; i < 24; i++) data[i] = respData[i];
+      } catch (e) { showList(); }
       active();
     },
     'onerror': showList,
