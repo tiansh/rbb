@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.37
+// @version     2.38
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.38 ：因为API调用有频率限制，减少API调用，可能时优先考虑使用getPageList
    * 2.37 ：元素属性上区别找到的隐藏视频和原来的视频，搜索相邻视频显示进度
    * 2.36 ：二次元新番列表显示对手机隐藏的视频
    * 2.35 ：修理无法找到不对应aid的视频的问题（#2）
@@ -587,7 +588,7 @@ var cosmos = function () {
     catch (e) { msgBox.style.top = '32px'; }
     var zIndex = 11000;
     var showMsg = function (msg, timeout, type, buttons) {
-      debug('MessageBox: %s', msg);
+      debug('MessageBox: %o - %o', msg, buttons);
       if (buttons) debug('MessageBox Buttons: %o', buttons);
       var text = xmlEscape(msg);
       if (buttons) text += buttons.map(function (button) {
@@ -821,7 +822,8 @@ var cosmos = function () {
   }());
 
   // getCid分为三种以方便之后根据不同需要决定优先关系
-  var getCidDirect = getId(), getCidUndirect = getId(), getCidCached = getId();
+  var getCidDirect = getId(), getCidAPI = getId();
+  var getCidUndirect = getId(), getCidCached = getId();
   var getAid = getId();
   var getTitle = getId();
   // 对getCid和getAid的结果分别进行缓存
@@ -919,7 +921,7 @@ var cosmos = function () {
       });
     };
     return bilibili.url.view.map(registGetCidByApi);
-  }(getCidDirect, getCidCache, getAidCache));
+  }(getCidAPI, getCidCache, getAidCache));
 
   // 通过提供给播放器以自动下一分页的接口获取cid
   var getCidByPageList = (function (getCid, getCidCache, getAidCache) {
@@ -1042,6 +1044,7 @@ var cosmos = function () {
   // 通过相邻视频查找cid
   var getCidNearby = (function (getCid, getCidCache, getAidCache) {
     return getCid.regist(function (id, oriOnsucc, oriOnerror) {
+      debug('Try to get cid using nearby videos...');
       var msgbox = showMsg(bilibili.text.loading.near, 1e9, 'warning');
       var hidemsg = function () { msgbox.parentNode.removeChild(msgbox); };
       var updateMsg = function (ccid, num) {
@@ -1121,7 +1124,7 @@ var cosmos = function () {
         (function tryGetNearCid() {
           debug('Get cid with aid = %d', aidF(id.aid, i + 1));
           if ((++i >= 8 && succ >= 3) || (i >= 12) || succ == 6) foundF(true);
-          else getCidCached.concat(getCidDirect)(
+          else getCidCached.concat(getCidDirect).concat(getCidAPI)(
             { 'aid': aidF(id.aid, i), 'pid': null },
             function (cid) {
               if (cid && foundF(cid)) succ++;
@@ -1620,7 +1623,7 @@ var cosmos = function () {
         if (ignore) replacedMenu(oldBofqi);
         if (isAdded) fixAddedPage(id);
       };
-      getValidCid(getCidDirect.concat(getCidCached).concat(getCidUndirect),
+      getValidCid(getCidAPI.concat(getCidDirect).concat(getCidCached).concat(getCidUndirect),
         id, function (cid, errormsg) {
           var ccid = [];
           getCurrentCid.gotCid(cid);
@@ -1903,14 +1906,14 @@ var cosmos = function () {
         // 如果本来已经是B站的则不需要继续处理
         if ((pageInfo.get(id.aid) || {}).title)
           updateMenu(undefined, undefined, inSite, isOrigen);
-        else getCidDirect(id, function (cids) {
+        else getCidAPI.concat(getCidDirect)(id, function (cids) {
           updateMenu(cids, undefined, inSite, isOrigen);
         }, function () {
           updateMenu();
         });
       } else {
         // 如果发现会自动跳转到其他网站或无法获取host信息，则查找cid，试图在B站内播放
-        getValidCid(getCidDirect.concat(getCidCached), id, function (cids, message) {
+        getValidCid(getCidAPI.concat(getCidDirect).concat(getCidCached), id, function (cids, message) {
           updateMenu(cids, message, inSite, isOrigen);
         }, function (cids, ignoreCheck) {
           updateMenu(cids, bilibili.text.loading.checks, inSite, isOrigen);
@@ -2221,6 +2224,7 @@ var cosmos = function () {
     if (typeof onsucc !== 'function') return;
     if (typeof onerror !== 'function' && typeof onerror !== 'undefined') return;
     var getCids = {
+      'api': getCidAPI,
       'direct': getCidDirect,
       'cached': getCidCached,
       'undirect': getCidUndirect,
@@ -2230,7 +2234,7 @@ var cosmos = function () {
     (methods || []).forEach(function (method) {
       if (getCids[method]) getCid.push(getCids[method]);
     });
-    if (!getCid.length) getCid = [getCidDirect, getCidCached];
+    if (!getCid.length) getCid = [getCidAPI, getCidDirect, getCidCached];
     getCid = getCid.reduce(function (x, y) {
       if (!x || !y) return x || y; return x.concat(y);
     });

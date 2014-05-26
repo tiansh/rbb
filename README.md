@@ -16,7 +16,8 @@
 
 <code>http://api.bilibili.cn/view?type=json&id={aid}&batch=1&appkey={appkey}</code>
 
-包括标题、描述、cid、分页标题等信息。
+包括标题、描述、cid、分页标题等信息。<br />
+信息最全，但是有频率限制，在不需要详细信息时可以优先考虑使用其他的途径。
 
 ### 通过pagelist获取 ###
 
@@ -91,20 +92,22 @@ spview中的bangumi参数为0/1用于区分是所属番剧还是相关视频。
 ## 完整版新番列表 ##
 
 新番列表隐藏了部分视频，如果需要完整版新番列表，需要通过手机的加载方式获取。
-<code>http://api.bilibili.cn/list?pagesize=24&type=json&page=1&ios=0&order=default&appkey=0a99fa1d87fdd38c&platform=ios&tid=33</code>。
+<code>http://api.bilibili.cn/list?pagesize=24&type=json&page=1&ios=0&order=default&appkey={appkey}&platform=ios&tid=33</code>。
 
 
 ## 脚本接口 ##
 
 其他脚本使用本脚本接口的方法
 
-<pre><code>// 参数：第一个参数为对应的函数名（String，如"ping"、"getCid"）
+```javascript
+// 参数：第一个参数为对应的函数名（String，如"ping"、"getCid"）
 // 后面的若干个参数为传给这个函数的参数
 var rbb = function () {
   if (!unsafeWindow.replaceBilibiliBofqi) unsafeWindow.replaceBilibiliBofqi = [];
   unsafeWindow.replaceBilibiliBofqi.push(Array.apply(Array, arguments));
   return unsafeWindow.replaceBilibiliBofqi.constructor.name !== 'Array';
-};</pre></code>
+};
+```
 
 如上代码提供了调用本脚本接口的方法，如rbb('ping', function () { alert('replace bilibili bofqi loaded!'); });可以检查本脚本是否已被加载。
 
