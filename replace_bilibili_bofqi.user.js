@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.38
+// @version     2.39
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.39 ：添加对撞车视频的处理
    * 2.38 ：因为API调用有频率限制，减少API调用，可能时优先考虑使用getPageList
    * 2.37 ：元素属性上区别找到的隐藏视频和原来的视频，搜索相邻视频显示进度
    * 2.36 ：二次元新番列表显示对手机隐藏的视频
@@ -161,7 +162,7 @@ var cosmos = function () {
       },
       'loading': {
         'near': '正在试图通过相邻视频查找cid，需要一些时间，且可能不准确。',
-        'nearc': '正在{{cid}}周围寻找视频，已搜索{{num}}个视频……',
+        'nearc': '正在{{cid}}周围搜索视频，已搜索{{num}}个视频……',
         'check': '已得到cid，检查加载视频地址… (cid:{{cid}})',
         'checks': '加载视频地址…',
         'ignore': '跳过检查',
@@ -380,6 +381,10 @@ var cosmos = function () {
           '</div>',
         '</div>',
       ].join(''),
+      'dupinfo': ['<div class="dupinfo">',
+        '（本视频已撞车或被版权所有者申述，',
+        '您可以到<a href="http://{{host}}/video/av{{aid}}">av{{aid}}</a>查看对应视频）',
+      '</div>'].join(''),
     },
     'js': {
       'page': 'http://static.hdslb.com/js/page.arc.js',
@@ -580,27 +585,36 @@ var cosmos = function () {
     return call;
   };
 
-  // 显示消息的提示框
-  var showMsg = (function () {
-    var msgBox = document.createElement('div'); msgBox.id = 'rbb-message';
+  var initShowMsg = function () {
+    var msgBox = document.querySelector('#rbb-message');
+    if (msgBox) return msgBox;
+    msgBox = document.createElement('div'); msgBox.id = 'rbb-message';
     document.body.parentNode.appendChild(msgBox);
     try { msgBox.style.top = getPosition(document.querySelector('.viewbox .info')).top + 'px'; }
     catch (e) { msgBox.style.top = '32px'; }
+    return msgBox;
+  };
+
+  // 显示消息的提示框
+  var showMsg = (function () {
     var zIndex = 11000;
     var showMsg = function (msg, timeout, type, buttons) {
+      var msgBox = initShowMsg();
       debug('MessageBox: %o - %o', msg, buttons);
       if (buttons) debug('MessageBox Buttons: %o', buttons);
       var text = xmlEscape(msg);
       if (buttons) text += buttons.map(function (button) {
         return bilibili.html.button(button.value);
       }).join('');
-      var msgbox = (new unsafeWindow.MessageBox({ 'zIndex': zIndex++, 'Overlap': true }))
-        .show(msgBox, text, timeout, type).get(0);
-      var buttonList = msgbox.querySelectorAll('button');
-      Array.apply(Array, buttonList).forEach(function (button, i) {
-        button.addEventListener('click', buttons[i].click);
-      });
-      return msgbox;
+      try {
+        var msgbox = (new unsafeWindow.MessageBox({ 'zIndex': zIndex++, 'Overlap': true }))
+          .show(msgBox, text, timeout, type).get(0);
+        var buttonList = msgbox.querySelectorAll('button');
+        Array.apply(Array, buttonList).forEach(function (button, i) {
+          button.addEventListener('click', buttons[i].click);
+        });
+        return msgbox;
+      } catch (e) { console.log('failed to show this message.'); }
     };
     showMsg.gotCid = function (cid) {
       if (cid) msgBox.setAttribute('cid', cid);
@@ -1611,6 +1625,28 @@ var cosmos = function () {
       }
     }(0));
   };
+  
+  var isDuplicate = function () {
+    if (!unsafeWindow.JumpUrl || !(unsafeWindow.pgo + 1)) return false;
+    var id = unsafeWindow.JumpUrl.toString().match(/av(\d+)/);
+    if (!id || !Number(id[1])) return false;
+    return Number(id[1]);
+  };
+
+  (function () {
+    var duplicate = isDuplicate();
+    if (!duplicate) return;
+    debug('found duplicate video -> av%d', duplicate);
+    unsafeWindow.pgo = 1;
+    unsafeWindow.JumpUrl = function () { };
+    call(function addDuplicateInfo() {
+      var z = document.querySelector('.z');
+      if (!z) return call(addDuplicateInfo);
+      var info = document.createElement('div');
+      info.innerHTML = genXML(bilibili.html.dupinfo, { 'aid': duplicate });
+      z.insertBefore(info.firstChild, z.firstChild);
+    });
+  }());
 
   // 主程序在这里
   (function mina() {
@@ -2012,6 +2048,7 @@ var cosmos = function () {
     });
     holdMouse();
     addStyle();
+    initShowMsg();
     return ret;
   };
 
