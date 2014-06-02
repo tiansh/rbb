@@ -6,6 +6,8 @@
 
 用户请移步脚本主页，本页面主要介绍脚本的一些实现原理。
 
+[其他一些bilibili视频的相关问题见wiki。](https://github.com/tiansh/rbb/wiki)
+
 本脚本最早发布在userscripts.org网站上（176946），考虑到该网站不能稳定地访问，所以移动到了github上。关于2.21以前的历史版本，可以到userscripts上找到。
 
 ## 获取cid ##
@@ -147,7 +149,9 @@ var rbb = function () {
   * onerror 获取失败时的回调函数（Function）
   * 参数：（无）
   * methods 获取cid使用哪些方法和这些方法的顺序（String构成的Array）
-  * 可能的取值："direct" 直接获取（可能包括API、HTML5、AssDown、PlayList等）
+  * 可能的取值：
+    * "direct" 直接获取（可能包括HTML5、AssDown、PlayList等）
+    * "api" 通过API获取
     * "undirect" 间接获取（通过相邻视频的cid猜测）
     * "cached" 读取缓存（如果之前获取过且用户没有禁用缓存）
 
@@ -166,3 +170,4 @@ var rbb = function () {
 * 注册添加评论等相关信息时的回调函数
 * 参数：callback 替换播放器时回调（Function）
   * 参数：（无）
+
