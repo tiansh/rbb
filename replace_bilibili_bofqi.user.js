@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.39
+// @version     2.40
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.40 ：修理强制替换框不会立即消失的错误
    * 2.39 ：添加对撞车视频的处理
    * 2.38 ：因为API调用有频率限制，减少API调用，可能时优先考虑使用getPageList
    * 2.37 ：元素属性上区别找到的隐藏视频和原来的视频，搜索相邻视频显示进度
@@ -1569,6 +1570,7 @@ var cosmos = function () {
       'click': force,
     }]);
     debug('Failed on checking cid with msg %s', msg);
+    return msgbox;
   };
 
   // 获取cid并判断是否可以正常显示视频
@@ -1673,7 +1675,7 @@ var cosmos = function () {
               showMsg(bilibili.text.fail.get, 12000, 'error');
             }
           } else if (typeof errormsg !== 'undefined') {
-            checkCidFail(id, cid, errormsg, function () {
+            msgbox = checkCidFail(id, cid, errormsg, function () {
               doReplace(cid);
               msgbox.parentNode.removeChild(msgbox);
             });
