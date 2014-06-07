@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.40
+// @version     2.41
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.41 ：修复显示隐藏视频时对XML字符的二次转义
    * 2.40 ：修理强制替换框不会立即消失的错误
    * 2.39 ：添加对撞车视频的处理
    * 2.38 ：因为API调用有频率限制，减少API调用，可能时优先考虑使用getPageList
@@ -2338,6 +2339,11 @@ else setTimeout(cosmos, 0);
   var xmlEscape = function (s) {
     return String(s).replace(/./g, function (c) { return '&#' + c.charCodeAt(0) + ';'; });
   };
+  var xmlUnescape = function (s) {
+    var d = document.createElement('div');
+    d.innerHTML = s;
+    return d.textContent;
+  };
 
   (function () {
     var r = location.href.match(/http:\/\/[^\/]*\/video\/bangumi-two-(\d+).html/);
@@ -2463,6 +2469,7 @@ else setTimeout(cosmos, 0);
         respData = JSON.parse(resp.responseText).list;
         for (data = [], i = 0; i < 24; i++) {
           data[i] = respData[i];
+          data[i].title = xmlUnescape(data[i].title);
           data[i].visible = 'mobile'
         }
       } catch (e) { showList(); }
