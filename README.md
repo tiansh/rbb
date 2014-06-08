@@ -16,7 +16,7 @@
 
 ### 通过API获取 ###
 
-<code>http://api.bilibili.cn/view?type=json&id={aid}&batch=1&appkey={appkey}</code>
+<code>http://api.bilibili.com/view?type=json&id={aid}&batch=1&appkey={appkey}</code>
 
 包括标题、描述、cid、分页标题等信息。<br />
 信息最全，但是有频率限制，在不需要详细信息时可以优先考虑使用其他的途径。
@@ -39,7 +39,7 @@ flash参数中"cid"或"\*-cid"可以提供cid
 
 ## 获取aid ##
 
-<code>http://interface.bilibili.cn/player?id=cid:{cid}</code>
+<code>http://interface.bilibili.com/player?id=cid:{cid}</code>
 
 可以通过cid获取aid
 
@@ -70,7 +70,7 @@ flash参数中"cid"或"\*-cid"可以提供cid
 
 ## 检查是否可以正常播放 ##
 
-<code>http://interface.bilibili.cn/playurl?cid={cid}</code>
+<code>http://interface.bilibili.com/playurl?cid={cid}</code>
 
 如果返回succ或suee则说明成功
 
@@ -83,7 +83,7 @@ flash参数中"cid"或"\*-cid"可以提供cid
 ## 获取新番专题相关内容 ##
 
 参考：<br />
-<code>http://api.bilibili.cn/spview?spid={spid}&season\_id={season\_id}&bangumi=1</code><br />
+<code>http://api.bilibili.com/spview?spid={spid}&season\_id={season\_id}&bangumi=1</code><br />
 <code>http://api.bilibili.tv/sp?spid={spid}</code>
 
 spview中的bangumi参数为0/1用于区分是所属番剧还是相关视频。
@@ -94,7 +94,7 @@ spview中的bangumi参数为0/1用于区分是所属番剧还是相关视频。
 ## 完整版新番列表 ##
 
 新番列表隐藏了部分视频，如果需要完整版新番列表，需要通过手机的加载方式获取。
-<code>http://api.bilibili.cn/list?pagesize=24&type=json&page=1&ios=0&order=default&appkey={appkey}&platform=ios&tid=33</code>。
+<code>http://api.bilibili.com/list?pagesize=24&type=json&page=1&ios=0&order=default&appkey={appkey}&platform=ios&tid=33</code>。
 
 
 ## 脚本接口 ##

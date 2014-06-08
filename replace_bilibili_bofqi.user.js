@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.41
+// @version     2.42
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.42 ：使用 bilibili.com 域名替换 interface, api
    * 2.41 ：修复显示隐藏视频时对XML字符的二次转义
    * 2.40 ：修理强制替换框不会立即消失的错误
    * 2.39 ：添加对撞车视频的处理
@@ -98,11 +99,13 @@ var cosmos = function () {
         'www.bilibili.tv',
         'bilibili.kankanews.com',
         'www.bilibili.cn',
+        'www.bilibili.com',
       ],
       'av': [
         'http://www.bilibili.tv/video/av',
         'http://bilibili.kankanews.com/video/av',
         'http://www.bilibili.cn/video/av',
+        'http://www.bilibili.com/video/av',
         'http://acg.tv/av',
       ],
       'video': 'http://{{host}}/video/av{{aid}}/index_{{pid}}.html',
@@ -119,23 +122,23 @@ var cosmos = function () {
       ],
       'bflash': 'https://static-s.bilibili.tv/play.swf?cid={{cid}}&aid={{aid}}',
       'sp': {
-        'spview': 'http://api.bilibili.cn/spview?spid={{spid}}&season_id={{season_id}}&bangumi=1',
-        'spid': 'http://api.bilibili.tv/sp?spid={{spid}}',
+        'spview': 'http://api.bilibili.com/spview?spid={{spid}}&season_id={{season_id}}&bangumi=1',
+        'spid': 'http://api.bilibili.com/sp?spid={{spid}}',
         'page': 'http://www.bilibili.tv/sp/{{title}}',
       },
       'view': [
         { // 网页Flash播放器的passkey （batch参数是额外加上去的）
-          'url': 'http://api.bilibili.cn/view?type=json&id={{aid}}&batch=1&appkey=8e9fc618fbd41e28',
+          'url': 'http://api.bilibili.com/view?type=json&id={{aid}}&batch=1&appkey=8e9fc618fbd41e28',
           'ua': navigator.userAgent,
         },
         { // 手机客户端的passkey（苹果系统与安卓系统的区别在于platform参数和userAgent）
-          'url': 'http://api.bilibili.cn/view?type=json&id={{aid}}&batch=1' +
+          'url': 'http://api.bilibili.com/view?type=json&id={{aid}}&batch=1' +
             '&platform=ios&appkey=0a99fa1d87fdd38c',
           'ua': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0',
         },
       ],
-      'playurl': 'http://interface.bilibili.cn/playurl?cid={{cid}}',
-      'player': 'http://interface.bilibili.cn/player?id=cid:{{cid}}',
+      'playurl': 'http://interface.bilibili.com/playurl?cid={{cid}}',
+      'player': 'http://interface.bilibili.com/player?id=cid:{{cid}}',
       'suggest': 'http://www.bilibili.tv/suggest?term=av{{aid}}' +
         '&jsoncallback={{callback}}&rnd={{random}}&_={{date}}',
       'html5': 'http://www.bilibili.tv/m/html5?aid={{aid}}&page={{pid}}',
@@ -2460,7 +2463,7 @@ else setTimeout(cosmos, 0);
   // 使用手机的API获取数据
   GM_xmlhttpRequest({
     'method': 'GET',
-    'url': 'http://api.bilibili.cn/list?pagesize=24&type=json&page=' + page +
+    'url': 'http://api.bilibili.com/list?pagesize=24&type=json&page=' + page +
       '&ios=0&order=default&appkey=0a99fa1d87fdd38c&platform=ios&tid=33',
     'headers': { 'User-Agent': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0' },
     'onload': function (resp) {

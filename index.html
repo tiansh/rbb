@@ -92,7 +92,7 @@
 <body>
 <div id="main-body" itemscope itemtype="http://schema.org/SoftwareApplication">
   <h1 itemprop="name">Replace bilibili bofqi</h1>
-  <div id="version">最新版本：<span itemprop="softwareVersion">2.41</span></div>
+  <div id="version">最新版本：<span itemprop="softwareVersion">2.42</span></div>
   <header>
     <ul id="intro">
       <li><strong>替换bilibili播放器为原生播放器</strong></li>
@@ -114,6 +114,11 @@
       </div>
     </div>
   </header>
+  <h3>注意[2014-06-08]</h3>
+  <div class="in">
+    <div class="p" style="font-weight: bold; color: #700;">之前在代理中添加“ http://interface.bilibili.cn/playurl?* ”的用户，<br />
+      请将“ http://interface.bilibili.com/playurl?* ”添加到你的代理列表中！</div>
+  </div>
   <div id="install_instruct">
     <h3>安装教程</h3>
     <div id="allbrowser" class="in">
@@ -180,7 +185,7 @@
     <div class="p">如果检查视频播放花费了太多的时间，脚本会询问是否忽略检查直接替换。如果你发现播放器左下角显示“加载视频地址…[完成]”，那么说明替换播放器已经成功。如果之后出现无限小电视的情况，可能是网络的问题，或者是视频源的问题。</div>
     <div class="p">检查是否可以正常播放时有如下几种常见错误：
       <ul>
-        <li>“视频不允许在您当前所在地区播放”：有时候这类问题可以通过强制替换后反复刷新来解决（强制替换后顶部有刷新用按钮，请勿直接刷新网页）。此外更为稳定的做法，因为这些视频不允许在中国大陆等地区（可能包括日本）播放，所以您可以使用一个在这些地区以外的代理并将<span>http://interface.bilibili.cn/playurl?*</span>作为代理规则加入到代理列表中。关于什么是代理、怎么使用代理等问题不在本文的讨论范围内，请自行Google。</li>
+        <li>“视频不允许在您当前所在地区播放”：有时候这类问题可以通过强制替换后反复刷新来解决（强制替换后顶部有刷新用按钮，请勿直接刷新网页）。此外更为稳定的做法，因为这些视频不允许在中国大陆等地区（可能包括日本）播放，所以您可以使用一个在这些地区以外的代理并将<span>http://interface.bilibili.com/playurl?*</span>作为代理规则加入到代理列表中。关于什么是代理、怎么使用代理等问题不在本文的讨论范围内，请自行Google。</li>
         <li>“（该视频当前不可用）”或“无法替换**源的视频”：一些视频可能无法替换为原始的播放器，还有一些视频可能需要等待几小时到一天的时间才能替换播放器。如果该视频新出不久，而且您不是急着马上要看到的话，可以考虑过一段时间之后再试试。</li>
       </ul>
     </div>
@@ -216,13 +221,15 @@
     <div class="p">脚本使用了GreaseMonkey中的<code>GM_xmlhttpRequest</code>、 <code>GM_getValue</code>、 <code>GM_setValue</code>、 <code>GM_deleteValue</code>、 <code>GM_addStyle</code>、 <code>unsafeWindow</code>接口。</div>
     <div class="p">
       脚本使用<code>GM_xmlhttpRequest</code>用于网络访问，脚本进行的网络访问限于下列域名：<ul>
-        <li>www.<span></span>bilibili.<span></span>tv</li>
-        <li>bilibili.kankanews.<span></span>com</li>
-        <li>secure.bilibili.<span></span>tv</li>
-        <li>static-s.bilibili.<span></span>tv</li>
-        <li>api.bilibili.<span></span>cn</li>
-        <li>interface.bilibili.<span></span>cn</li>
-        <li>static.hdslb.<span></span>com</li>
+        <li>www.bilibili.tv</li>
+        <li>bilibili.kankanews.com</li>
+        <li>secure.bilibili.tv</li>
+        <li>static-s.bilibili.tv</li>
+        <li>api.bilibili.cn</li>
+        <li>interface.bilibili.cn</li>
+        <li>api.bilibili.com</li>
+        <li>interface.bilibili.com</li>
+        <li>static.hdslb.com</li>
       </ul>
       这些域名都是bilibili.tv站点的相关域名。<br />
       此外在长按链接弹出菜单时，脚本还会访问对应链接指向的页面。
@@ -240,6 +247,7 @@
   <h3>更新历史</h3>
   <div class="in">
     <ul>
+      <li>2.42 ：使用 bilibili.com 域名替换 interface, api</li>
       <li>2.41 ：修复显示隐藏视频时对XML字符的二次转义</li>
       <li>2.40 ：修理强制替换框不会立即消失的错误</li>
       <li>2.39 ：添加对撞车视频的处理</li>
