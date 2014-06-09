@@ -96,6 +96,23 @@ spview中的bangumi参数为0/1用于区分是所属番剧还是相关视频。
 新番列表隐藏了部分视频，如果需要完整版新番列表，需要通过手机的加载方式获取。
 <code>http://api.bilibili.com/list?pagesize=24&type=json&page=1&ios=0&order=default&appkey={appkey}&platform=ios&tid=33</code>。
 
+## 其他视频信息 ##
+
+### 搜索的自动补全 ###
+
+在搜索框输入 /av\d+/ 形式的字串，会提示对应视频的标题。可以用此获取视频标题
+
+<code>http://www.bilibili.tv/suggest?term=av{{aid}}&jsoncallback={{callback}}&rnd={{random}}&\_={{date}}</code>
+
+返回是 JSONP 形式的，要注意的是callback是不可省的，否则会直接不返回数据。
+
+### 补档页面使用的接口 ###
+
+这个接口可以获取部分视频的信息，尚不确定什么条件下可以获取到，什么情况下不行。
+
+<code>http://www.bilibili.tv/html/arc/{{aid}}.html</code>
+
+返回的是 HTML 的片段。
 
 ## 脚本接口 ##
 

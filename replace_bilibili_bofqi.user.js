@@ -4,7 +4,7 @@
 // @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.42
+// @version     2.43
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -43,6 +43,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.43 ：添加一个补档页面使用的接口获取视频信息
    * 2.42 ：使用 bilibili.com 域名替换 interface, api
    * 2.41 ：修复显示隐藏视频时对XML字符的二次转义
    * 2.40 ：修理强制替换框不会立即消失的错误
@@ -143,6 +144,7 @@ var cosmos = function () {
         '&jsoncallback={{callback}}&rnd={{random}}&_={{date}}',
       'html5': 'http://www.bilibili.tv/m/html5?aid={{aid}}&page={{pid}}',
       'pagelist': 'http://www.bilibili.tv/widget/getPageList?aid={{aid}}',
+      'arc': 'http://www.bilibili.tv/html/arc/{{aid}}.html',
     },
     'text': {
       'fail': {
@@ -338,9 +340,7 @@ var cosmos = function () {
                   '<a href="javascript:;" class="btn_w" onclick="return addNewTag({{aid}})">增加TAG</a>',
                 '</span>',
               '</div>',
-              '<div class="intro">',
-                '{{description}}',
-              '</div>',
+              '<div class="intro">{{description}}</div>',
             '</div>',
           '</div>',
           '<div style="overflow:hidden;">',
@@ -1363,7 +1363,7 @@ var cosmos = function () {
     if (z && z_msg) {
       z_msg.style.display = 'none';
       doc.querySelector('.player').src = 'about:blank';
-      ['#heimu', '.viewbox', '#bofqi', doc.querySelector('.common').parentNode].map(function (qs) {
+      ['#heimu', '.viewbox', '#bofqi', '.s_center', doc.querySelector('.common').parentNode].map(function (qs) {
         var o = qs;
         if (o.constructor === String) {
           if (document.querySelector(qs)) return document.querySelector(qs);
@@ -1432,6 +1432,7 @@ var cosmos = function () {
     if (!bgm_list) return;
     if (bgm_list.querySelector('.info .detail .t')) return;
     var video = videoInfo.get(id.aid);
+    if (!video) return;
     showBgmInfo({
       'spid': video.spid,
       'season_id': video.season_id,
@@ -1439,10 +1440,35 @@ var cosmos = function () {
     }, true);
   };
 
+  // 利用补档页面的接口获取更多可用的描述
+  var fixVideoInfos2 = function (id, callback) {
+    GM_xmlhttpRequest({
+      'method': 'GET',
+      'url': genURL(bilibili.url.arc, { 'aid': id.aid }),
+      'onload': function (resp) {
+        var data, title, description;
+        try {
+          data = resp.responseText.split(/\r\n|\r|\n/);
+          title = data[0].match(/^<strong>(.*)<\/strong><br \/>$/)[1];
+          description = data[4];
+        } catch (e) { }
+        if (title) {
+          document.querySelector('.viewbox h2').setAttribute('title', title);
+          document.querySelector('.viewbox h2').textContent = title;
+        }
+        if (description)
+          document.querySelector('.s_center .s_div .intro').textContent = description;
+        callback();
+      },
+    });
+  };
+
+  // 利用API获得的数据添加更多可用的描述
   var fixVideoInfos = function (id) {
     var info = videoInfo.get(id.aid);
-    if (!info) return;
-    if (info.description) document.querySelector('.s_center .s_div .intro').textContent = info.description;
+    if (!info) return null;
+    if (info.description)
+      document.querySelector('.s_center .s_div .intro').textContent = info.description;
     if (info.title) {
       document.querySelector('.viewbox h2').setAttribute('title', info.title);
       document.querySelector('.viewbox h2').textContent = info.title;
@@ -1453,12 +1479,28 @@ var cosmos = function () {
       unsafeWindow.spid = Number(info.spid);
       unsafeWindow.kwtags((info.tag || '').split(','), []);
     } catch (e) { }
+    return info;
+  };
+
+  // 如果没有描述，那就把描述藏起来
+  var hideDescription = function () {
+    var description = '', s_center;
+    try {
+      description = document.querySelector('.s_center .s_div .intro').textContent;
+    } catch (e) {}
+    var tags = document.querySelector('.tag li');
+    if (!description.length && !tags) {
+      s_center = document.querySelector('.s_center');
+      s_center.parentNode.removeChild(s_center);
+    }
   };
 
   // 添加的页面中完善相关信息
   var fixAddedPage = function (id) {
+    debug('Try to show more details for av%d', id.aid);
     fixBgmInfo(id);
-    fixVideoInfos(id);
+    if (!fixVideoInfos(id)) fixVideoInfos2(id, hideDescription);
+    else hideDescription();
   };
 
   var addedBofqi = callbackEvents();
@@ -1632,6 +1674,7 @@ var cosmos = function () {
     }(0));
   };
   
+  // 检查是不是撞车视频
   var isDuplicate = function () {
     if (!unsafeWindow.JumpUrl || !(unsafeWindow.pgo + 1)) return false;
     var id = unsafeWindow.JumpUrl.toString().match(/av(\d+)/);
