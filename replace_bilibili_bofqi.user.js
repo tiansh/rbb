@@ -232,7 +232,7 @@ var cosmos = function () {
             'scrolling="no" border="0" frameborder="no" framespacing="0" ',
             'onload="window.securePlayerFrameLoaded=true">',
           '</iframe>',
-          '<img src="https://secure.{{hostww}}/images/grey.gif" id="img_ErrCheck" style="display:none" />',
+          '<img src="https://secure.', bilibili.hostww, '/images/grey.gif" id="img_ErrCheck" style="display:none" />',
           '<script type="text/javascript" src="http://static.hdslb.com/js/page.player_error.js"></script>',
         ].join('');
       },
@@ -270,7 +270,7 @@ var cosmos = function () {
             '<span class="bsp-menu-fg" >', sp, xmlEscape(title), '</span>',
           '</a>'].join('');
         };
-        return ['<div class="bsp-menu', (sp ? ' bsp-menu-with-sp' : ''),'" style="width: 0; height: 0;">',
+        return ['<div class="bsp-menu', (sp ? ' bsp-menu-with-sp' : ''), '" style="width: 0; height: 0;">',
           (sp ? (['<div class="bsp-menu-sp">',
               menuLink(sp.href, sp.title, true),
             '</div>'].join('')) : ''),
@@ -1194,7 +1194,7 @@ var cosmos = function () {
         var networkCounter = 0;
         // 对每个范围内的cid进行搜索
         (function tryFindCid(i) {
-          if (Math.random() < 1/4) updateMsg(m, i);
+          if (Math.random() < 1 / 4) updateMsg(m, i);
           var currentCid, re = i - cids.length;
           if (i < cids.length) currentCid = cids[i];
           else {
@@ -1489,7 +1489,7 @@ var cosmos = function () {
     var description = '', s_center;
     try {
       description = document.querySelector('.s_center .s_div .intro').textContent;
-    } catch (e) {}
+    } catch (e) { }
     var tags = document.querySelector('.tag li');
     if (!description.length && !tags) {
       s_center = document.querySelector('.s_center');
@@ -1675,7 +1675,7 @@ var cosmos = function () {
       }
     }(0));
   };
-  
+
   // 检查是不是撞车视频
   var isDuplicate = function () {
     if (!unsafeWindow.JumpUrl || !(unsafeWindow.pgo + 1)) return false;
@@ -1979,7 +1979,7 @@ var cosmos = function () {
       var sp = videoSpInfo.get(id.aid) || undefined;
       if (!sp && rbb.spid && rbb.sp_title) sp = {
         'title': rbb.sp_title,
-        'href': genURL(bilibili.url.sp.page, {'title': rbb.sp_title}),
+        'href': genURL(bilibili.url.sp.page, { 'title': rbb.sp_title }),
       };
       return (menu = choseMenu(menuItems, sp, position));
     };
@@ -2107,7 +2107,7 @@ var cosmos = function () {
   var showBgmInfo = function (id, pre_leaded) {
     var done = 0, spInfo = null, bgmInfo = null;
     var doneCallback = null, errorCallback;
-    var sp = {'spid': id.spid, 'season_id': id.season_id};
+    var sp = { 'spid': id.spid, 'season_id': id.season_id };
 
     var error = function () {
       if (done < 0) return; done = -1;
@@ -2133,7 +2133,7 @@ var cosmos = function () {
       GM_xmlhttpRequest({
         'method': 'GET',
         'url': genURL(bilibili.url.sp.spid, sp),
-        'onload': function (resp) { load(spInfo = parse(resp));  },
+        'onload': function (resp) { load(spInfo = parse(resp)); },
         'onerror': error,
       });
     };
