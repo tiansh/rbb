@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name        Replace bilibili bofqi
 // @namespace   http://userscripts.org/users/ts
-// @description 替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
-// @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
+// @description 替换哔哩哔哩弹幕网（bilibili.com, bilibili.tv, bilibili.kankanews.com）播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
+// @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
-// @version     2.43
+// @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
+// @version     2.44
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -13,8 +14,9 @@
 // @grant       GM_deleteValue
 // @grant       GM_addStyle
 // @grant       unsafeWindow
-// @copyright   GNU GPL v3, CC BY-SA 3.0
-// @author      田生
+// @copyright   2013+, 田生
+// @license     GPL version 3 or any later version; http://www.gnu.org/copyleft/gpl.html
+// @license     CC Attribution-ShareAlike 4.0 International; http://creativecommons.org/licenses/by-sa/4.0/
 // @run-at      document-start
 // ==/UserScript==
 
@@ -35,7 +37,7 @@ var config = {
 /*
 
 Replace bilibili bofqi
-替换 bilibili.tv ( bilibili.kankanews.com ) 播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
+替换哔哩哔哩弹幕网（bilibili.com, bilibili.tv, bilibili.kankanews.com）播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 
 
 项目主页： https://tiansh.github.io/rbb/
@@ -43,6 +45,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.44 ：支持 bilibili.com 域名，并以其为默认域名
    * 2.43 ：添加一个补档页面使用的接口获取视频信息
    * 2.42 ：使用 bilibili.com 域名替换 interface, api
    * 2.41 ：修复显示隐藏视频时对XML字符的二次转义
@@ -52,20 +55,7 @@ Replace bilibili bofqi
    * 2.37 ：元素属性上区别找到的隐藏视频和原来的视频，搜索相邻视频显示进度
    * 2.36 ：二次元新番列表显示对手机隐藏的视频
    * 2.35 ：修理无法找到不对应aid的视频的问题（#2）
-   * 2.34 ：直接外站跳转或404的视频长按菜单也有专题链接了，404上生成的页面支持视频描述和标签等
-   * 2.33 ：二次元新番列表显示隐藏的视频
-   * 2.32 ：修理对页面广告的兼容性（因为我一直在用ABP所以没发现）
-   * 2.31 ：播放页面500也可以播给你看！
-   * 2.30 ：少量代码整理，修理下拉菜单为空时边框显示，修理无法加载到信息的视频的菜单项
-   * 2.29 ：没有播放器时，长按链接菜单将生成页面排到前面
-   * 2.28 ：改善推断视频地址算法，修理获取标题失败问题；鉴于最近的一些情况，在404页面启用脚本
-   * 2.27 ：生成页面增加显示番剧信息，修复生成页面长按鼠标菜单的相关问题
-   * 2.26 ：调整样式，增强Chrome/Oprea在用户空间页面的兼容性
-   * 2.25 ：修理Chrome/Oprea下显示专题链接的问题
-   * 2.24 ：长按鼠标菜单显示专题链接
-   * 2.23 ：长按选择播放位置的菜单中共享弹幕池的若干分页只显示最后一个分页
-   * 2.22 ：将脚本迁移到github
-   * 之前的版本请到 http://userscripts.org/scripts/show/176946 查看
+   * 之前的版本请到 https://github.com/tiansh/rbb/blob/master/CHANGELOG.md 查看
 
 
 【关于】
@@ -82,7 +72,7 @@ var preLoaded = (function () {
     if (location.pathname.indexOf(prefix) !== 0) return false;
     if (location.hash.indexOf('rbb=') === 0) return false;
     GM_addStyle('html { display: none; }');
-    document.title = '哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili.tv';
+    document.title = '哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili';
     return true;
   };
   return {
@@ -95,37 +85,40 @@ var cosmos = function () {
 
   var bilibili = {
     'url': {
-      'bilibili': 'bilibili.tv',
+      'bilibili': 'bilibili.com',
       'host': [
+        'www.bilibili.com',
         'www.bilibili.tv',
         'bilibili.kankanews.com',
-        'www.bilibili.cn',
-        'www.bilibili.com',
+        'www.bilibili.cn', // 保留，网站并未使用
       ],
       'av': [
+        'http://www.bilibili.com/video/av',
         'http://www.bilibili.tv/video/av',
         'http://bilibili.kankanews.com/video/av',
-        'http://www.bilibili.cn/video/av',
-        'http://www.bilibili.com/video/av',
         'http://acg.tv/av',
+        'http://www.bilibili.cn/video/av', // 保留，网站并未使用
       ],
       'video': 'http://{{host}}/video/av{{aid}}/index_{{pid}}.html',
       'iframe': {
+        'secure2': 'https://secure.bilibili.com/secure,',
         'secure': 'https://secure.bilibili.tv/secure,',
         'ssl': 'https://ssl.bilibili.tv/secure,',
       },
-      'bofqi': 'https://secure.bilibili.tv/secure,cid={{cid}}&aid={{aid}}',
+      'bofqi': 'https://secure.bilibili.com/secure,cid={{cid}}&aid={{aid}}',
       'flash': [
+        'https://static-s.bilibili.com/play.swf',
+        'https://static-s.bilibili.com/live-play.swf',
         'https://static-s.bilibili.tv/play.swf',
         'https://static-s.bilibili.tv/live-play.swf',
         'http://static.hdslb.com/play.swf',
         'http://static.hdslb.com/live-play.swf',
       ],
-      'bflash': 'https://static-s.bilibili.tv/play.swf?cid={{cid}}&aid={{aid}}',
+      'bflash': 'https://static-s.{{hostww}}/play.swf?cid={{cid}}&aid={{aid}}',
       'sp': {
         'spview': 'http://api.bilibili.com/spview?spid={{spid}}&season_id={{season_id}}&bangumi=1',
         'spid': 'http://api.bilibili.com/sp?spid={{spid}}',
-        'page': 'http://www.bilibili.tv/sp/{{title}}',
+        'page': 'http://{{host}}/sp/{{title}}',
       },
       'view': [
         { // 网页Flash播放器的passkey （batch参数是额外加上去的）
@@ -140,11 +133,11 @@ var cosmos = function () {
       ],
       'playurl': 'http://interface.bilibili.com/playurl?cid={{cid}}',
       'player': 'http://interface.bilibili.com/player?id=cid:{{cid}}',
-      'suggest': 'http://www.bilibili.tv/suggest?term=av{{aid}}' +
+      'suggest': 'http://{{host}}/suggest?term=av{{aid}}' +
         '&jsoncallback={{callback}}&rnd={{random}}&_={{date}}',
-      'html5': 'http://www.bilibili.tv/m/html5?aid={{aid}}&page={{pid}}',
-      'pagelist': 'http://www.bilibili.tv/widget/getPageList?aid={{aid}}',
-      'arc': 'http://www.bilibili.tv/html/arc/{{aid}}.html',
+      'html5': 'http://{{host}}/m/html5?aid={{aid}}&page={{pid}}',
+      'pagelist': 'http://{{host}}/widget/getPageList?aid={{aid}}',
+      'arc': 'http://{{host}}/html/arc/{{aid}}.html',
     },
     'text': {
       'fail': {
@@ -187,7 +180,7 @@ var cosmos = function () {
         'add': '已成功找到第{{pid}}分页，分页可能有缺少或错误。(cid:{{cid}})',
         'rollback': '禁用替换',
       },
-      'title': '{{title}} - 哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili.tv',
+      'title': '{{title}} - 哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili',
       'disable': {
         'message': '当前页面已禁用对播放器的替换。',
         'redo': '撤销禁用',
@@ -219,6 +212,12 @@ var cosmos = function () {
       'ignore': [1, 1113, 8219],
     },
     'host': location.host,
+    'hostww': {
+      'www.bilibili.tv': 'bilibili.tv',
+      'bilibili.kankanews.com': 'bilibili.com',
+      'www.bilibili.cn': 'bilibili.cn',
+      'www.bilibili.com': 'bilibili.com',
+    },
     'timeout': {
       'press': 200,
       'network': 1000,
@@ -233,7 +232,7 @@ var cosmos = function () {
             'scrolling="no" border="0" frameborder="no" framespacing="0" ',
             'onload="window.securePlayerFrameLoaded=true">',
           '</iframe>',
-          '<img src="https://secure.bilibili.tv/images/grey.gif" id="img_ErrCheck" style="display:none" />',
+          '<img src="https://secure.{{hostww}}/images/grey.gif" id="img_ErrCheck" style="display:none" />',
           '<script type="text/javascript" src="http://static.hdslb.com/js/page.player_error.js"></script>',
         ].join('');
       },
@@ -290,7 +289,7 @@ var cosmos = function () {
         '<html xmlns="http://www.w3.org/1999/xhtml">',
         '<head>',
         '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',
-          '<title>{{title}} - 哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili.tv</title>',
+          '<title>{{title}} - 哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili</title>',
           '<meta name="title" content="{{title}}" />',
           '<link rel="stylesheet" ',
             'href="http://static.hdslb.com/images/jquery-ui/smoothness/jquery-ui.css" type="text/css">',
@@ -313,7 +312,7 @@ var cosmos = function () {
               '<div class="sf">',
                 '<a href="/ass/{{aid}}.html" class="ass" target="_blank" id="assdown"></a>',
                 '<a onclick="goQuote();" class="f" style="visibility:hidden!important"></a>',
-                '<a href="http://www.bilibili.tv/m/stow?aid={{aid}}" onclick="return showStow({{aid}},this);" ',
+                '<a href="http://{{host}}/m/stow?aid={{aid}}" onclick="return showStow({{aid}},this);" ',
                   'class="s" target="_blank"></a>',
               '</div>',
               '<div class="stowbox"></div>',
@@ -325,7 +324,7 @@ var cosmos = function () {
             '<iframe height="482" width="950" class="player" ',
               'src="about:blank" scrolling="no" border="0" ',
               'frameborder="no" framespacing="0" onload="window.securePlayerFrameLoaded=true"></iframe>',
-            '<img src="https://secure.bilibili.tv/images/grey.gif" id="img_ErrCheck" style="display:none" />',
+            '<img src="https://secure.{{hostww}}/images/grey.gif" id="img_ErrCheck" style="display:none" />',
             '<script type="text/javascript" src="http://static.hdslb.com/js/page.player_error.js"></script>',
           '</div>',
           // 新番专题信息
@@ -404,6 +403,7 @@ var cosmos = function () {
       // 函数中代码来自 http://static.hdslb.com/js/page.arc.js
       'post': ['javascript: void(function () {var c;',
         'window.postMessage?(c=function(a){"https://secure.bilibili.tv"!=a.origin',
+            '&&"https://secure.bilibili.com"!=a.origin', // 原站点中目前没有，自行添加的
             '&&"https://ssl.bilibili.tv"!=a.origin||"secJS:"!=a.data.substr(0,6)',
             '||eval(a.data.substr(6));',
           '"undefined"!=typeof console&&console.log(a.origin+": "+a.data)},',
@@ -443,7 +443,9 @@ var cosmos = function () {
       '}());'].join(''),
     },
   };
-  if (bilibili.url.host.indexOf(bilibili.host) === -1) bilibili.host = bilibili.url.host[0];
+  if (bilibili.url.host.indexOf(bilibili.host) === -1)
+    bilibili.host = bilibili.url.host[0];
+  bilibili.hostww = bilibili.hostww[bilibili.host] || 'bilibili.com';
 
   // 以setTimeout调用函数
   var call = function (f) { setTimeout(f, 0); };
@@ -2371,6 +2373,20 @@ else setTimeout(cosmos, 0);
 // Bilibili Show Hidden Bangumi
 (function fixBangumiTwoList() {
 
+  var bilibili = {
+    'url': {
+      'host': [
+        'www.bilibili.com',
+        'www.bilibili.tv',
+        'bilibili.kankanews.com',
+        'www.bilibili.cn',
+      ],
+    },
+    'host': location.host,
+  };
+  if (bilibili.url.host.indexOf(bilibili.host) === -1)
+    bilibili.host = bilibili.url.host[0];
+
   var loaded = !!document.body, data = null, page;
 
   // 将数字转换成以万为单位计数的形式
@@ -2430,7 +2446,7 @@ else setTimeout(cosmos, 0);
             '<i class="date" title="日期">', xmlEscape(video.create), '</i>',
           '</div>',
           '<div class="info">', xmlEscape(video.description), '</div>',
-          '<a class="up r10000" target="_blank" href="http://space.bilibili.tv/', video.mid, '">', xmlEscape(video.author), '</a>',
+          '<a class="up r10000" target="_blank" href="http://space.bilibili.com/', video.mid, '">', xmlEscape(video.author), '</a>',
         '</li>',
       ].join('');
       ul.appendChild(c.firstChild);
@@ -2443,7 +2459,7 @@ else setTimeout(cosmos, 0);
   var hideNextPage = function () {
     GM_xmlhttpRequest({
       'method': 'GET',
-      'url': 'http://www.bilibili.tv/video/bangumi-two-' + (page + 1) + '.html',
+      'url': 'http://' + bilibili.host + '/video/bangumi-two-' + (page + 1) + '.html',
       'onload': function (resp) {
         var doc = (new DOMParser()).parseFromString(resp.responseText, 'text/html');
         dataFromDocument(doc).map(function (video) {
@@ -2499,7 +2515,7 @@ else setTimeout(cosmos, 0);
         data[found].visible = 'all';
     };
     dataFromDocument(document).forEach(add2Data);
-    data.sort(function (x, y) { return Number(x.aid) < Number(y.aid); })
+    data.sort(function (x, y) { return Number(y.aid) - Number(x.aid); })
     return data;
   };
 
