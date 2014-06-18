@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.44
+// @version     2.45
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -20,6 +20,7 @@
 // @run-at      document-start
 // ==/UserScript==
 
+
 // 如果想要修改程序的相关配置，可以直接在这里修改。
 // 这些配置会存储到文件中，因此即便自动升级，也会保留之前的配置，不必禁用自动升级。
 // 如果为null则表示这里将使用原来设置的值或默认值。
@@ -31,13 +32,14 @@ var config = {
   'export': null, // 是否向外部暴露接口（Boolean，默认true）
   'netmax': null, // 通过相邻视频推测时最多检查多少个视频（Number，默认50）
   'cmenu_type': null, // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
+  'fx32': null, // 如果您在 Firefox 32 上使用 Greasemonkey 1.x 或 2.0.x ，请修改为true（Boolean，默认false）
   'clean': false, // 这里为true的话会清空所有本地设置，全部使用默认值，上面的所有设置将无效
 };
 
 /*
 
 Replace bilibili bofqi
-替换哔哩哔哩弹幕网（bilibili.com, bilibili.tv, bilibili.kankanews.com）播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
+替换哔哩哔哩弹幕网（bilibili.com, bilibili.kankanews.com）播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 
 
 项目主页： https://tiansh.github.io/rbb/
@@ -45,6 +47,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.45 ：完善对 bilibili.com 域名的支持，添加对Fx32+GM1的支持（请手动开启）
    * 2.44 ：支持 bilibili.com 域名，并以其为默认域名
    * 2.43 ：添加一个补档页面使用的接口获取视频信息
    * 2.42 ：使用 bilibili.com 域名替换 interface, api
@@ -64,6 +67,19 @@ Replace bilibili bofqi
 
 */
 
+// 对火狐32上因为沙箱机制变更而导致GM安全判断出错的折中办法
+// 如果不是火狐32+用户，或使用的GM已经修复了这个问题，请不要开启
+if (config.fx32 || GM_getValue('fx32')) {
+  // https://gist.github.com/tiansh/bbe60ec5c9c0531643db
+  GM_xmlhttpRequest = (function () {
+    var old = GM_xmlhttpRequest;
+    return function (details) {
+      var x = new Number(0);
+      for (var i in details) x[i] = details[i];
+      return old(x);
+    };
+  }());
+}
 
 var preLoaded = (function () {
   // 检查是否是生成用的页面，如果是的话则标记并隐藏内容
@@ -88,33 +104,35 @@ var cosmos = function () {
       'bilibili': 'bilibili.com',
       'host': [
         'www.bilibili.com',
-        'www.bilibili.tv',
         'bilibili.kankanews.com',
+        'www.bilibili.tv', // 可能已停用
         'www.bilibili.cn', // 保留，网站并未使用
       ],
       'av': [
         'http://www.bilibili.com/video/av',
-        'http://www.bilibili.tv/video/av',
         'http://bilibili.kankanews.com/video/av',
         'http://acg.tv/av',
+        'http://www.bilibili.tv/video/av', // 可能已停用
         'http://www.bilibili.cn/video/av', // 保留，网站并未使用
       ],
       'video': 'http://{{host}}/video/av{{aid}}/index_{{pid}}.html',
       'iframe': {
-        'secure2': 'https://secure.bilibili.com/secure,',
-        'secure': 'https://secure.bilibili.tv/secure,',
-        'ssl': 'https://ssl.bilibili.tv/secure,',
+        'secure': 'https://secure.bilibili.com/secure,',
+        'ssl': 'https://ssl.bilibili.com/secure,', // 保留，网站并未使用
+        'secure0': 'https://secure.bilibili.tv/secure,', // 可能已停用
+        'ssl0': 'https://ssl.bilibili.tv/secure,', // 可能已停用
       },
       'bofqi': 'https://secure.bilibili.com/secure,cid={{cid}}&aid={{aid}}',
       'flash': [
         'https://static-s.bilibili.com/play.swf',
         'https://static-s.bilibili.com/live-play.swf',
+        // 历史播放器，可能已停用
         'https://static-s.bilibili.tv/play.swf',
         'https://static-s.bilibili.tv/live-play.swf',
         'http://static.hdslb.com/play.swf',
         'http://static.hdslb.com/live-play.swf',
       ],
-      'bflash': 'https://static-s.{{hostww}}/play.swf?cid={{cid}}&aid={{aid}}',
+      'bflash': 'https://static-s.bilibili.com/play.swf?cid={{cid}}&aid={{aid}}',
       'sp': {
         'spview': 'http://api.bilibili.com/spview?spid={{spid}}&season_id={{season_id}}&bangumi=1',
         'spid': 'http://api.bilibili.com/sp?spid={{spid}}',
@@ -212,12 +230,6 @@ var cosmos = function () {
       'ignore': [1, 1113, 8219],
     },
     'host': location.host,
-    'hostww': {
-      'www.bilibili.tv': 'bilibili.tv',
-      'bilibili.kankanews.com': 'bilibili.com',
-      'www.bilibili.cn': 'bilibili.cn',
-      'www.bilibili.com': 'bilibili.com',
-    },
     'timeout': {
       'press': 200,
       'network': 1000,
@@ -232,7 +244,7 @@ var cosmos = function () {
             'scrolling="no" border="0" frameborder="no" framespacing="0" ',
             'onload="window.securePlayerFrameLoaded=true">',
           '</iframe>',
-          '<img src="https://secure.', bilibili.hostww, '/images/grey.gif" id="img_ErrCheck" style="display:none" />',
+          '<img src="https://secure.bilibili.com/images/grey.gif" id="img_ErrCheck" style="display:none" />',
           '<script type="text/javascript" src="http://static.hdslb.com/js/page.player_error.js"></script>',
         ].join('');
       },
@@ -324,7 +336,7 @@ var cosmos = function () {
             '<iframe height="482" width="950" class="player" ',
               'src="about:blank" scrolling="no" border="0" ',
               'frameborder="no" framespacing="0" onload="window.securePlayerFrameLoaded=true"></iframe>',
-            '<img src="https://secure.{{hostww}}/images/grey.gif" id="img_ErrCheck" style="display:none" />',
+            '<img src="https://secure.bilibili.com/images/grey.gif" id="img_ErrCheck" style="display:none" />',
             '<script type="text/javascript" src="http://static.hdslb.com/js/page.player_error.js"></script>',
           '</div>',
           // 新番专题信息
@@ -401,9 +413,10 @@ var cosmos = function () {
       ],
       // 接收来自播放器窗口的请求
       // 函数中代码来自 http://static.hdslb.com/js/page.arc.js
+      // 为了兼容性目的添加了 .tv 相关域名
       'post': ['javascript: void(function () {var c;',
-        'window.postMessage?(c=function(a){"https://secure.bilibili.tv"!=a.origin',
-            '&&"https://secure.bilibili.com"!=a.origin', // 原站点中目前没有，自行添加的
+        'window.postMessage?(c=function(a){"https://secure.bilibili.com"!=a.origin',
+            '&&"https://secure.bilibili.tv"!=a.origin&&"https://ssl.bilibili.com"!=a.origin',
             '&&"https://ssl.bilibili.tv"!=a.origin||"secJS:"!=a.data.substr(0,6)',
             '||eval(a.data.substr(6));',
           '"undefined"!=typeof console&&console.log(a.origin+": "+a.data)},',
@@ -445,7 +458,6 @@ var cosmos = function () {
   };
   if (bilibili.url.host.indexOf(bilibili.host) === -1)
     bilibili.host = bilibili.url.host[0];
-  bilibili.hostww = bilibili.hostww[bilibili.host] || 'bilibili.com';
 
   // 以setTimeout调用函数
   var call = function (f) { setTimeout(f, 0); };
@@ -462,6 +474,7 @@ var cosmos = function () {
       'export': true,
       'netmax': 50,
       'cmenu_type': 'default',
+      'fx32': false,
     };
     var readConfig = function (key) {
       if (config[key] === null) config[key] = GM_getValue(key, null);
@@ -2377,8 +2390,8 @@ else setTimeout(cosmos, 0);
     'url': {
       'host': [
         'www.bilibili.com',
-        'www.bilibili.tv',
         'bilibili.kankanews.com',
+        'www.bilibili.tv',
         'www.bilibili.cn',
       ],
     },

@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
   <title>Replace bilibili bofqi</title>
   <meta name="keywords" content="bilibili, bofqi, 哔哩哔哩, 播放器, cid" />
-  <meta name="description" content="替换哔哩哔哩弹幕网（bilibili.com, bilibili.tv, bilibili.kankanews.com）播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。" />
+  <meta name="description" content="替换哔哩哔哩弹幕网（bilibili.com, bilibili.kankanews.com, bilibili.tv）播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。" />
   <link rel="canonical" href="https://tiansh.github.io/rbb/">
   <style>
     html, body { font-family: "Microsoft YaHei",Helvetica,Arial,sans-serif; font-size: 16px; font-weight: normal; line-height: 24px; margin: 0; padding: 0; }
@@ -92,7 +92,7 @@
 <body>
 <div id="main-body" itemscope itemtype="http://schema.org/SoftwareApplication">
   <h1 itemprop="name">Replace bilibili bofqi</h1>
-  <div id="version">最新版本：<span itemprop="softwareVersion">2.44</span></div>
+  <div id="version">最新版本：<span itemprop="softwareVersion">2.45</span></div>
   <header>
     <ul id="intro">
       <li><strong>替换bilibili播放器为原生播放器</strong></li>
@@ -114,10 +114,17 @@
       </div>
     </div>
   </header>
-  <h3>注意[2014-06-08]</h3>
+  <h3>最新版注意事项</h3>
   <div class="in">
-    <div class="p" style="font-weight: bold; color: #700;">之前在代理中添加“ http://interface.bilibili.cn/playurl?* ”的用户，<br />
+    <div class="p">由于 bilibili 修改了域名，之前在代理中添加“ http://interface.bilibili.cn/playurl?* ”的用户，<br />
       请将“ http://interface.bilibili.com/playurl?* ”添加到你的代理列表中！</div>
+    <style>#fx32-notice { display: none; }</style>
+    <script>
+      var fx = navigator.userAgent.match(/Firefox\/(\d+)/);
+      if (fx && Number(fx[1]) && Number(fx[1]) >= 32) document.write('<style>#fx32-notice { display: block; }</style>');
+    </script>
+    <noscript><style>#fx32-notice { display: block; }</style></noscript>
+    <div id="fx32-notice" class="p" style="background:#fdd;">由于 Firefox 32 的安全机制变化，对于 Firefox 32 及以上版本使用 Greasemonkey 1.x/2.0 用户，请安装脚本后，在35行附近将“'fx32': null,”修改为“'fx32': true,”以兼容因为火狐的沙箱机制变化造成的问题。</div>
   </div>
   <div id="install_instruct">
     <h3>安装教程</h3>
@@ -249,6 +256,7 @@
   <h3>更新历史</h3>
   <div class="in">
     <ul>
+      <li>2.45 ：完善对 bilibili.com 域名的支持，添加对Fx32+GM1的支持（请<a href="javascript: void(function(){var n=document.getElementById('fx32-notice');n.style.display='block';n.scrollIntoView(false);}());">手动开启</a>）</li>
       <li>2.44 ：支持 bilibili.com 域名，并以其为默认域名</li>
       <li>2.43 ：添加一个补档页面使用的接口获取视频信息</li>
       <li>2.42 ：使用 bilibili.com 域名替换 interface, api</li>
