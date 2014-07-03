@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.45
+// @version     2.46
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -47,6 +47,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.46 ：支持版权番选择播放器的视频
    * 2.45 ：完善对 bilibili.com 域名的支持，添加对Fx32+GM1的支持（请手动开启）
    * 2.44 ：支持 bilibili.com 域名，并以其为默认域名
    * 2.43 ：添加一个补档页面使用的接口获取视频信息
@@ -605,6 +606,7 @@ var cosmos = function () {
     return call;
   };
 
+  // 初始化消息框
   var initShowMsg = function () {
     var msgBox = document.querySelector('#rbb-message');
     if (msgBox) return msgBox;
@@ -673,6 +675,14 @@ var cosmos = function () {
     return !!doc.querySelector('#bofqi');
   };
 
+  // 检查是否是选择视频源的版权番
+  var isCopyrightVideoSelect = function (doc) {
+    if (doc.querySelector('.player-placeholder')) return true;
+    var i = doc.querySelector('#alist>*');
+    if (i && i.innerHTML.match(/\[\[(.*)\]\]/)) return true;
+    return false;
+  };
+
   // 检查是否支持此页面
   var validPage = function () {
     var id = videoPage(location.href);
@@ -693,6 +703,8 @@ var cosmos = function () {
     if (!document.querySelector('#bofqi') && id && id.pid) id.pid = null;
     // 强制不替换的
     if (hashArg.get('rbb') === 'false') return null;
+    // 选择版权番播放器的视频pid要-1
+    if (isCopyrightVideoSelect(document) && !--id.pid) id.pid = null;
     if (id) debug('Av%d, page%d', id.aid, id.pid);
     return id;
   };
@@ -701,7 +713,6 @@ var cosmos = function () {
   // regist注册一个函数
   // concat与其他的getId连接
   var getId = function () {
-    // 避免递归地根据周围av推算cid
     var funclist = Array.apply(Array, arguments);
     var outer = !!funclist.length;
     // 注册一种查找方法
@@ -749,6 +760,7 @@ var cosmos = function () {
     var run = function (iid, onsucc, onerror) {
       // 获取注册的函数列表
       var ways = funclist;
+      if (ways.length === 0) { call(onerror); return; }
       var processing = 0, done = false, remained = ways.length;
       // 当一个函数返回失败时
       var err = function () {
@@ -929,6 +941,7 @@ var cosmos = function () {
             try {
               // 解析返回结果
               data = JSON.parse(resp.responseText);
+              debug('view api response: %o', data);
               Object.keys(data.list).forEach(function (k) { cids[data.list[k].page] = data.list[k].cid; });
               // 缓存数据
               if (cids && Object.keys(cids).length) getCidCache.put(String(id.aid), cids);
@@ -1287,7 +1300,7 @@ var cosmos = function () {
       },
       'onerror': function () {
         debug('Network failed while verifying cid');
-        onerror(bilibili.text.fail.network);
+        noerror(bilibili.text.fail.network);
       }
     });
   };
@@ -1314,6 +1327,16 @@ var cosmos = function () {
       call(function () { doFix(i + 1); });
     }(0));
     fixFullWindow = function () { };
+  };
+
+  // 修理版权番选择页面
+  var fixCopyrightVideoPage = function () {
+    var bofqi = document.querySelector('#bofqi');
+    if (bofqi.getAttribute('fake')) return;
+    var newBofqi = createNewBofqi(0, 0);
+    bofqi.parentNode.insertBefore(newBofqi, bofqi.nextSibling);
+    document.querySelector('#bofqi .player').style.display = 'none';
+    GM_addStyle('.player-placeholder { display: none; }');
   };
 
   // 通过搜索建议获取视频标题
@@ -1371,6 +1394,7 @@ var cosmos = function () {
 
   // 添加标题、评论
   var addContent = function (aid, title, scriptLoaded) {
+    debug('add content av%d, title: %s', aid, title);
     var z = document.querySelector('.z');
     var z_msg = document.querySelector('.z-msg');
     var doc = (new DOMParser()).parseFromString(
@@ -1397,9 +1421,23 @@ var cosmos = function () {
     }
   };
 
+  // 找到第一个能放的视频页播放
+  var firstValidPage = function (aid, pids, cids, callback) {
+    (function checkPage(i) {
+      debug('find first valid page: %d', i);
+      if (i === pids.length) return;
+      var pid = pids[i], cid = cids[pid];
+      checkCid(cid, function () { callback(pid); }, function (msg) {
+        checkCidFail({'aid': aid, 'pid': pid}, cid, msg);
+        checkPage(i + 1);
+      });
+    }(0));
+  };
+
   // 添加分页
   var addPages = function (aid, cids, pages, pid) {
-    debug("add pages: %o", cids);
+    debug("add pages cid: %o", cids);
+    debug("add pages pages: %o", pages);
     var guess = cids.constructor === Array;
     var alist = document.querySelector('#rbb_alist');
     if (!alist) {
@@ -1407,7 +1445,6 @@ var cosmos = function () {
       alist.id = 'rbb_alist';
       document.querySelector('.alist').appendChild(alist);
     }
-    var player = document.querySelector('#bofqi .player');
     var pa = {};
     var pids = Object.keys(cids).map(Number).sort(function (x, y) { return x - y; });
     pids.forEach(function (pid) {
@@ -1416,7 +1453,7 @@ var cosmos = function () {
         a = document.createElement('a'); a.setAttribute('cid', cids[pid]);
         alist.appendChild(a);
       }
-      if (pages && pages[pid]) a.innerHTML = xmlEscape(pages[pid]);
+      if (pages && pages[pid]) a.innerHTML = xmlEscape(String(pid) + bilibili.text.split.pid + pages[pid]);
       else a.innerHTML = xmlEscape((guess ? ' ? ' : String(pid)) + bilibili.text.split.pid + '(cid=' + cids[pid] + ')');
       a.href = genURL(bilibili.url.video, { 'host': bilibili.host, 'aid': aid, 'pid': pid });
       return (pa[pid] = a);
@@ -1424,11 +1461,14 @@ var cosmos = function () {
     var showPage = function (pid) {
       var cid = cids[pid];
       if (!cid) return;
-      player.src = genURL(bilibili.url.bofqi, { 'aid': aid, 'cid': cid });
+      var player = document.querySelector('#bofqi .player');
+      var url = genURL(bilibili.url.bofqi, { 'aid': aid, 'cid': cid });
+      player.src = url; player.style.display = 'block';
       Object.keys(pa).map(function (pid) { pa[pid].className = ''; });
       pa[pid].className = 'curPage';
       getCurrentCid.gotCid(cid);
       replacedBofqi(cid);
+      hashArg.set('page', pid);
     };
     Object.keys(pa).map(function (pid) {
       pa[pid].addEventListener('click', function (event) {
@@ -1437,11 +1477,13 @@ var cosmos = function () {
       });
     });
     if (pid && pid !== true && pids.indexOf(pid) !== -1) showPage(pid);
-    else if (pid) showPage(pids[0]);
+    else if (pid === true) showPage(pids[0]);
+    else if (pid) firstValidPage(aid, pids, cids, showPage)
     fixFullWindow();
     return pids;
   };
 
+  // 补充生成的页面的番组信息
   var fixBgmInfo = function (id) {
     var bgm_list = document.querySelector('.v_bgm_list');
     if (!bgm_list) return;
@@ -1521,6 +1563,7 @@ var cosmos = function () {
   var addedBofqi = callbackEvents();
   // 添加播放器标题等页面相关元素
   var addBofqi = function (aid, callback) {
+    debug('add bofqi av%d', aid);
     var cb = function (title) {
       var isNew = addContent(aid, title, callback);
       fixFullWindow();
@@ -1551,15 +1594,27 @@ var cosmos = function () {
   }());
 
   var replacedBofqi = callbackEvents();
+
+  var replaceBofqiAll = function (id, cids0) {
+    var cids, pages = {}, info = videoInfo.get(id.aid);
+    if (isCopyrightVideoSelect(document)) {
+      cids = {};
+      Object.keys(cids0).map(function (i) { cids[Number(i) + 1] = cids0[i]; });
+      fixCopyrightVideoPage();
+      if (info && info.list) Object.keys(info.list).map(function (i) {
+        pages[Number(info.list[i].page) + 1] = info.list[i].part;
+      });
+    } else cids = cids0;
+    var pids = addPages(id.aid, cids, pages, videoPage(location.href).pid || true);
+    showMsg(bilibili.text.succ.add
+      .replace('{{cid}}', pids.map(function (pid) { return cids[pid]; }).join(', '))
+      .replace('{{pid}}', pids.join(', ')), 12000, 'info');
+    return;
+  };
+
   // 替换播放器
   var replaceBofqi = function (id, cid, keepold) {
-    if (typeof cid !== 'number') {
-      var pids = addPages(id.aid, cid, {}, videoPage(location.href).pid || true);
-      showMsg(bilibili.text.succ.add
-        .replace('{{cid}}', pids.map(function (pid) { return cid[pid]; }).join(', '))
-        .replace('{{pid}}', pids.join(', ')), 12000, 'info');
-      return;
-    }
+    if (typeof cid !== 'number') replaceBofqiAll(id, cid);
     var oldBofqi = document.querySelector('#bofqi');
     var newBofqi = createNewBofqi(id.aid, cid);
     oldBofqi.parentNode.insertBefore(newBofqi, oldBofqi);
@@ -1581,7 +1636,7 @@ var cosmos = function () {
 
   // 在不确定是否可以正常替换的情况下替换了播放器显示该菜单
   var replacedMenu = function (oldBofqi) {
-    var player = document.querySelector('.player');
+    var player = document.querySelector('#bofqi .player');
     // 重新加载
     var reloadButton = {
       'value': bilibili.text.force.reload,
@@ -1626,10 +1681,12 @@ var cosmos = function () {
     if (videoSource.unsupport) msg = addField(bilibili.text.fail.unsupport);
     else if (!msg) msg = addField(bilibili.text.fail.check);
     else msg = addField(bilibili.text.fail.msg);
-    var msgbox = showMsg(msg, 50000, 'error', [{
+    var buttons = [];
+    if (force) buttons = [{
       'value': bilibili.text.force.replace.replace('{{source}}', videoSource),
       'click': force,
-    }]);
+    }];
+    var msgbox = showMsg(msg, 50000, 'error', buttons);
     debug('Failed on checking cid with msg %s', msg);
     return msgbox;
   };
@@ -1725,18 +1782,23 @@ var cosmos = function () {
       };
       getValidCid(getCidAPI.concat(getCidDirect).concat(getCidCached).concat(getCidUndirect),
         id, function (cid, errormsg) {
+          debug('mina got cid=%o, with message: %s', cid, errormsg);
           var ccid = [];
           getCurrentCid.gotCid(cid);
           if (msgbox) { msgbox.parentNode.removeChild(msgbox); msgbox = null; }
           if (!cid) {
+            // 如果没有获取到cid
             ccid = candidateCidInfo.get(id.aid);
             if (ccid && ccid.length) {
+              // 但是找到了一些不对应aid的视频
               addPages(id.aid, ccid, null, null);
               showMsg(bilibili.text.fail.getc, 12000, 'warning');
             } else {
+              // 获取cid失败
               showMsg(bilibili.text.fail.get, 12000, 'error');
             }
           } else if (typeof errormsg !== 'undefined') {
+            // 如果有报错信息，则说明是cid检查不通过
             msgbox = checkCidFail(id, cid, errormsg, function () {
               doReplace(cid);
               msgbox.parentNode.removeChild(msgbox);
@@ -1762,6 +1824,7 @@ var cosmos = function () {
               ]);
         });
     };
+    // 如果需要添加播放框添加播放器
     if (isAdded) addBofqi(id.aid, act);
     else act();
   }());
@@ -1927,7 +1990,7 @@ var cosmos = function () {
         });
       } else {
         return (menu = choseMenu([{
-          'title': bilibili.text.fail.default,
+          'title': rbb.title || bilibili.text.fail.default,
           'href': a.href,
           'submenu': [],
         }], null, position));
@@ -2002,9 +2065,10 @@ var cosmos = function () {
       menu.set(errormsg);
     };
     var checkHost = function (inSite, isOrigen) {
+      debug('inSite: %o, isOrigen: %o', inSite, isOrigen);
       if (inSite && isOrigen) {
         // 如果本来已经是B站的则不需要继续处理
-        if ((pageInfo.get(id.aid) || {}).title)
+        if ((pageInfo.get(id.aid) || {}).title && bilibili.config.cmenu_type !== 'complete')
           updateMenu(undefined, undefined, inSite, isOrigen);
         else getCidAPI.concat(getCidDirect)(id, function (cids) {
           updateMenu(cids, undefined, inSite, isOrigen);
