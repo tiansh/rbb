@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.46
+// @version     2.47
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -14,6 +14,7 @@
 // @grant       GM_deleteValue
 // @grant       GM_addStyle
 // @grant       unsafeWindow
+// @author      田生
 // @copyright   2013+, 田生
 // @license     GPL version 3 or any later version; http://www.gnu.org/copyleft/gpl.html
 // @license     CC Attribution-ShareAlike 4.0 International; http://creativecommons.org/licenses/by-sa/4.0/
@@ -47,6 +48,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.47 ：版权番选择播放器的视频会随机选择一个可以替换的视频做替换
    * 2.46 ：支持版权番选择播放器的视频
    * 2.45 ：完善对 bilibili.com 域名的支持，添加对Fx32+GM1的支持（请手动开启）
    * 2.44 ：支持 bilibili.com 域名，并以其为默认域名
@@ -106,7 +108,7 @@ var cosmos = function () {
       'host': [
         'www.bilibili.com',
         'bilibili.kankanews.com',
-        'www.bilibili.tv', // 可能已停用
+        'www.bilibili.tv', // 用户空间仍然在使用该域名
         'www.bilibili.cn', // 保留，网站并未使用
       ],
       'av': [
@@ -1336,7 +1338,6 @@ var cosmos = function () {
     var newBofqi = createNewBofqi(0, 0);
     bofqi.parentNode.insertBefore(newBofqi, bofqi.nextSibling);
     document.querySelector('#bofqi .player').style.display = 'none';
-    GM_addStyle('.player-placeholder { display: none; }');
   };
 
   // 通过搜索建议获取视频标题
@@ -1422,7 +1423,11 @@ var cosmos = function () {
   };
 
   // 找到第一个能放的视频页播放
-  var firstValidPage = function (aid, pids, cids, callback) {
+  var findValidPage = function (aid, pids, cids, callback) {
+    pids = JSON.parse(JSON.stringify(pids));
+    pids = pids.map(function (x) { return [Math.random(), x]; })
+      .sort(function (x, y) { return x[0] - y[0]; })
+      .map(function (x) { return x[1]; });
     (function checkPage(i) {
       debug('find first valid page: %d', i);
       if (i === pids.length) return;
@@ -1478,7 +1483,7 @@ var cosmos = function () {
     });
     if (pid && pid !== true && pids.indexOf(pid) !== -1) showPage(pid);
     else if (pid === true) showPage(pids[0]);
-    else if (pid) firstValidPage(aid, pids, cids, showPage)
+    else if (pid) findValidPage(aid, pids, cids, showPage)
     fixFullWindow();
     return pids;
   };
@@ -1594,7 +1599,7 @@ var cosmos = function () {
   }());
 
   var replacedBofqi = callbackEvents();
-
+  // 添加多个播放器
   var replaceBofqiAll = function (id, cids0) {
     var cids, pages = {}, info = videoInfo.get(id.aid);
     if (isCopyrightVideoSelect(document)) {
@@ -2755,6 +2760,8 @@ var addStyle = function () {
     '}',
     // rbb_alist
     '#rbb_alist { float:left; width: 100%; max-height: 70px; overflow-y: auto; }',
+    // copyright player selector
+    '.player-placeholder { display: none; }',
   ].join(''));
 };
 addStyle();
