@@ -92,7 +92,7 @@
 <body>
 <div id="main-body" itemscope itemtype="http://schema.org/SoftwareApplication">
   <h1 itemprop="name">Replace bilibili bofqi</h1>
-  <div id="version">最新版本：<span itemprop="softwareVersion">2.47</span></div>
+  <div id="version">最新版本：<span itemprop="softwareVersion">2.48</span></div>
   <header>
     <ul id="intro">
       <li><strong>替换bilibili播放器为原生播放器</strong></li>
@@ -118,13 +118,6 @@
   <div class="in">
     <div class="p">由于 bilibili 修改了域名，之前在代理中添加“ http://interface.bilibili.cn/playurl?* ”的用户，<br />
       请将“ http://interface.bilibili.com/playurl?* ”添加到你的代理列表中！</div>
-    <style>#fx32-notice { display: none; }</style>
-    <script>
-      var fx = navigator.userAgent.match(/Firefox\/(\d+)/);
-      if (fx && Number(fx[1]) && Number(fx[1]) >= 32) document.write('<style>#fx32-notice { display: block; }</style>');
-    </script>
-    <noscript><style>#fx32-notice { display: block; }</style></noscript>
-    <div id="fx32-notice" class="p" style="background:#fdd;">由于 Firefox 32 的安全机制变化，对于 Firefox 32 及以上版本使用 Greasemonkey 1.x/2.0 用户，请安装脚本后，在35行附近将“'fx32': null,”修改为“'fx32': true,”以兼容因为火狐的沙箱机制变化造成的问题。</div>
   </div>
   <div id="install_instruct">
     <h3>安装教程</h3>
@@ -256,9 +249,10 @@
   <h3>更新历史</h3>
   <div class="in">
     <ul>
+      <li>2.48 ：兼容GM2，修正版权番选择播放器的视频的长按菜单</li>
       <li>2.47 ：版权番选择播放器的视频会随机选择一个可以替换的视频做替换</li>
       <li>2.46 ：支持版权番选择播放器的视频</li>
-      <li>2.45 ：完善对 bilibili.com 域名的支持，添加对Fx32+GM1的支持（请<a href="javascript: void(function(){var n=document.getElementById('fx32-notice');n.style.display='block';n.scrollIntoView(false);}());">手动开启</a>）</li>
+      <li>2.45 ：完善对 bilibili.com 域名的支持</li>
       <li>2.44 ：支持 bilibili.com 域名，并以其为默认域名</li>
       <li>2.43 ：添加一个补档页面使用的接口获取视频信息</li>
       <li>之前的版本请到 https://github.com/tiansh/rbb/blob/master/CHANGELOG.md 查看</li>

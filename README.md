@@ -1,4 +1,4 @@
-# Replace Bilibili bofqi #
+# Replace bilibili bofqi #
 
 <span style="font-size: 60px; font-weight: bold; line-height: 80px;">[点此进入脚本主页](http://tiansh.github.io/rbb/)</span>
 

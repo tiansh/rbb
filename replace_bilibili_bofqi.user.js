@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.47
+// @version     2.48
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -32,8 +32,7 @@ var config = {
   'check': null, // 是否检查替换后是否能正常播放（Boolean，默认true）
   'export': null, // 是否向外部暴露接口（Boolean，默认true）
   'netmax': null, // 通过相邻视频推测时最多检查多少个视频（Number，默认50）
-  'cmenu_type': null, // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
-  'fx32': null, // 如果您在 Firefox 32 上使用 Greasemonkey 1.x 或 2.0.x ，请修改为true（Boolean，默认false）
+  'cmenu_type': 'default', // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
   'clean': false, // 这里为true的话会清空所有本地设置，全部使用默认值，上面的所有设置将无效
 };
 
@@ -48,6 +47,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.48 ：兼容GM2，修正版权番选择播放器的视频的长按菜单
    * 2.47 ：版权番选择播放器的视频会随机选择一个可以替换的视频做替换
    * 2.46 ：支持版权番选择播放器的视频
    * 2.45 ：完善对 bilibili.com 域名的支持，添加对Fx32+GM1的支持（请手动开启）
@@ -69,20 +69,6 @@ Replace bilibili bofqi
   脚本使用 GNU GPL v3 或 CC BY-SA 3.0 协议。
 
 */
-
-// 对火狐32上因为沙箱机制变更而导致GM安全判断出错的折中办法
-// 如果不是火狐32+用户，或使用的GM已经修复了这个问题，请不要开启
-if (config.fx32 || GM_getValue('fx32')) {
-  // https://gist.github.com/tiansh/bbe60ec5c9c0531643db
-  GM_xmlhttpRequest = (function () {
-    var old = GM_xmlhttpRequest;
-    return function (details) {
-      var x = new Number(0);
-      for (var i in details) x[i] = details[i];
-      return old(x);
-    };
-  }());
-}
 
 var preLoaded = (function () {
   // 检查是否是生成用的页面，如果是的话则标记并隐藏内容
@@ -193,6 +179,7 @@ var cosmos = function () {
         'page': '生成网页',
         'swf': '仅播放器',
         'origen': '原始页面',
+        'auto': '自动选择',
         'chose': '选择分页',
         'sp': '专题页',
       },
@@ -1763,8 +1750,7 @@ var cosmos = function () {
     var duplicate = isDuplicate();
     if (!duplicate) return;
     debug('found duplicate video -> av%d', duplicate);
-    unsafeWindow.pgo = 1;
-    unsafeWindow.JumpUrl = function () { };
+    location.href = 'javascript:void(pgo=1,JumpUrl=function(){});';
     call(function addDuplicateInfo() {
       var z = document.querySelector('.z');
       if (!z) return call(addDuplicateInfo);
@@ -1962,6 +1948,12 @@ var cosmos = function () {
       if (configMenu === 'complete') wholeMenu = true;
       var info = videoInfo.get(id.aid) || {};
       var pinfo = pageInfo.get(id.aid) || {};
+      var copyrightSelect = false;
+      try {
+        if (pinfo.nodedata.length === Object.keys(info.list).length + 1)
+          if (pinfo.nodedata[0][0].match(/\[\[(.*)\]\]/))
+            copyrightSelect = true;
+      } catch (e) {}
       var rbb = {
         'aid': id.aid,
         'cids': {},
@@ -1974,11 +1966,14 @@ var cosmos = function () {
         'spid': info.spid || 0,
         'sp_title': info.sp_title || null,
         'season_id': info.season_id || 0,
+        'copyright_select': copyrightSelect,
       };
       if (info.list) {
         Object.keys(info.list).map(function (i) {
-          rbb.cids[info.list[i].page] = info.list[i].cid;
-          rbb.pages[info.list[i].page] = info.list[i].part;
+          var page = info.list[i].page;
+          if (copyrightSelect) page++;
+          rbb.cids[page] = info.list[i].cid;
+          rbb.pages[page] = info.list[i].part;
         });
       } else if (pinfo.nodedata && !wholeMenu) {
         if (pinfo.nodedata.length === 0) {
@@ -2043,7 +2038,7 @@ var cosmos = function () {
       };
       // 三种页面
       var page, iframe, origen, menuItems;
-      origen = menuItem(bilibili.text.menu.origen, origenLink);
+      origen = menuItem(copyrightSelect ? bilibili.text.menu.auto : bilibili.text.menu.origen, origenLink);
       if (wholeMenu) {
         page = menuItem(bilibili.text.menu.page, pageLink);
         iframe = menuItem(bilibili.text.menu.swf, iframeLink);
@@ -2053,8 +2048,9 @@ var cosmos = function () {
       } else menuItems = [origen];
       if (menuItems.length === 1) {
         menuItems[0].title = rbb.title ||
+          (copyrightSelect ? bilibili.text.menu.auto :
           (menuItems[0].submenu.length ?
-          bilibili.text.menu.chose : bilibili.text.menu.origen);
+          bilibili.text.menu.chose : bilibili.text.menu.origen));
       }
       // 专题
       var sp = videoSpInfo.get(id.aid) || undefined;
@@ -2620,6 +2616,8 @@ else setTimeout(cosmos, 0);
       active();
     },
     'onerror': showList,
+    'timeout': 3000,
+    'ontimeout': showList,
   });
 
 }());
