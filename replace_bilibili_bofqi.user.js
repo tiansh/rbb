@@ -47,6 +47,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.49 ：继续修理GM2兼容性
    * 2.48 ：兼容GM2，修正版权番选择播放器的视频的长按菜单
    * 2.47 ：版权番选择播放器的视频会随机选择一个可以替换的视频做替换
    * 2.46 ：支持版权番选择播放器的视频
@@ -238,6 +239,11 @@ var cosmos = function () {
           '<script type="text/javascript" src="http://static.hdslb.com/js/page.player_error.js"></script>',
         ].join('');
       },
+      'msgbox': [
+        '<div class="m_layer" style="display: block;"><div class="bg"><div class="content">',
+          '<div class="mini"> <b class="{{type}}"></b> {{text}} </div>',
+        '</div> </div> </div>',
+      ].join(''),
       'menu': function (items, sp) {
         if (sp) items.unshift({
           'href': sp.href,
@@ -444,6 +450,29 @@ var cosmos = function () {
         'h=0;$(".mmask").remove();$(document).unbind("mousemove");$("body,#bofqi")',
         '.removeClass("noselect");$(".move",r).removeClass("on")}',
       '}());'].join(''),
+      'kwtags': ['javascript: void(function () {',
+        'aid = String({{aid}});',
+        'mid = String({{mid}});',
+        'spid = Number({{spid}});',
+        'kwtags(({{tag}} || "").split(","), []);',
+      '}());'].join(''),
+      'showsp': ['javascript: void(function () {',
+        'var i, o;',
+        'document.querySelector(".tag").innerHTML = "";',
+        'aid = String({{aid}});',
+        'mid = String({{mid}});',
+        'spid = Number({{spid}});',
+        'try { kwtags({{tag}}, []); } catch (e1) { }',
+        'isSpAtt = isSpFav = "0";',
+        'if (AttentionList) {',
+          'for (i in AttentionList) {',
+            'o = AttentionList[i];',
+            'if ((o < 0) && (o * -1) == {{spid}})',
+            'isSpAtt = isSpFav = "1";',
+          '}',
+        '}',
+        'try { showSpAdbtn(); } catch (e2) { }',
+      ].join(''),
     },
   };
   if (bilibili.url.host.indexOf(bilibili.host) === -1)
@@ -464,7 +493,6 @@ var cosmos = function () {
       'export': true,
       'netmax': 50,
       'cmenu_type': 'default',
-      'fx32': false,
     };
     var readConfig = function (key) {
       if (config[key] === null) config[key] = GM_getValue(key, null);
@@ -521,6 +549,10 @@ var cosmos = function () {
     var datas = [{ '<': '{', '>': '}' }]
       .concat(Array.apply(Array, arguments).slice(1)).concat(bilibili);
     return genStr(xml, function (s) { return s; }, datas);
+  };
+  var genCode = function (url) {
+    var datas = Array.apply(Array, arguments).slice(1).concat(bilibili);
+    return genStr(url, function (s) { return JSON.stringify(s); }, datas);
   };
 
   // 通过链接获取主机地址
@@ -606,6 +638,19 @@ var cosmos = function () {
     return msgBox;
   };
 
+  var genMsgBox = function (rel, text, timeout, type, zIndex) {
+    var mb = document.createElement('div');
+    mb.innerHTML = genXML(bilibili.html.msgbox, { 'text': text, 'type': type });
+    mb = mb.firstChild;
+    try { pos = getPosition(rel); } catch (e) { pos = { 'top': 0, 'left': 0 }; }
+    mb.style.left = pos.left + 'px';
+    mb.style.top = pos.top + 'px';
+    if (zIndex) mb.style.zIndex = zIndex;
+    if (timeout > 0) setTimeout(function () { mb.parentNode.removeChild(mb); }, timeout);
+    document.body.appendChild(mb);
+    return mb;
+  };
+
   // 显示消息的提示框
   var showMsg = (function () {
     var zIndex = 11000;
@@ -618,14 +663,13 @@ var cosmos = function () {
         return bilibili.html.button(button.value);
       }).join('');
       try {
-        var msgbox = (new unsafeWindow.MessageBox({ 'zIndex': zIndex++, 'Overlap': true }))
-          .show(msgBox, text, timeout, type).get(0);
+        var msgbox = genMsgBox(msgBox, text, timeout, type, zIndex++);
         var buttonList = msgbox.querySelectorAll('button');
         Array.apply(Array, buttonList).forEach(function (button, i) {
           button.addEventListener('click', buttons[i].click);
         });
         return msgbox;
-      } catch (e) { console.log('failed to show this message.'); }
+      } catch (e) { console.log('failed to show this message: %o', e); }
     };
     showMsg.gotCid = function (cid) {
       if (cid) msgBox.setAttribute('cid', cid);
@@ -1289,7 +1333,7 @@ var cosmos = function () {
       },
       'onerror': function () {
         debug('Network failed while verifying cid');
-        noerror(bilibili.text.fail.network);
+        onerror(bilibili.text.fail.network);
       }
     });
   };
@@ -1522,12 +1566,14 @@ var cosmos = function () {
       document.querySelector('.viewbox h2').setAttribute('title', info.title);
       document.querySelector('.viewbox h2').textContent = info.title;
     }
-    if (id.aid && info.mid && info.spid && info.tag) try {
-      unsafeWindow.aid = String(id.aid);
-      unsafeWindow.mid = String(info.mid);
-      unsafeWindow.spid = Number(info.spid);
-      unsafeWindow.kwtags((info.tag || '').split(','), []);
-    } catch (e) { }
+    if (id.aid && info.mid && info.spid && info.tag) {
+      location.href = genCode(bilibili.js.kwtags, {
+        'aid': id.aid,
+        'mid': info.mid,
+        'spid': info.spid,
+        'tag': info.tag,
+      });
+    }
     return info;
   };
 
@@ -2286,21 +2332,7 @@ var cosmos = function () {
         debug('Error while add elements: %o', e);
       }
       window.addEventListener('load', function () {
-        var i, o;
-        document.querySelector('.tag').innerHTML = '';
-        unsafeWindow.aid = String(rbb.aid);
-        unsafeWindow.mid = String(rbb.mid);
-        unsafeWindow.spid = Number(rbb.spid);
-        try { unsafeWindow.kwtags(rbb.tag, []); } catch (e1) { }
-        unsafeWindow.isSpAtt = unsafeWindow.isSpFav = "0";
-        if (unsafeWindow.AttentionList) {
-          for (i in unsafeWindow.AttentionList) {
-            o = unsafeWindow.AttentionList[i];
-            if ((o < 0) && (o * -1) == rbb.spid)
-              unsafeWindow.isSpAtt = unsafeWindow.isSpFav = "1";
-          }
-        }
-        try { unsafeWindow.showSpAdbtn(); } catch (e2) { }
+        location.href = genCode(bilibili.js.showsp, rbb);
       });
       addPages(rbb.aid, rbb.cids, rbb.pages, rbb.pid || Object.keys(rbb.pages)[0]);
       if (rbb.spid) callback = showBgmInfo(rbb);
@@ -2612,8 +2644,8 @@ else setTimeout(cosmos, 0);
           data[i].title = xmlUnescape(data[i].title);
           data[i].visible = 'mobile'
         }
+        active();
       } catch (e) { showList(); }
-      active();
     },
     'onerror': showList,
     'timeout': 3000,
