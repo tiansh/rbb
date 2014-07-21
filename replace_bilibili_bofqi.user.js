@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.48
+// @version     2.50
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -47,6 +47,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.50 ：修复404页面或未审核视频生成页面的错误 (#3)
    * 2.49 ：继续修理GM2兼容性
    * 2.48 ：兼容GM2，修正版权番选择播放器的视频的长按菜单
    * 2.47 ：版权番选择播放器的视频会随机选择一个可以替换的视频做替换
@@ -1652,7 +1653,7 @@ var cosmos = function () {
 
   // 替换播放器
   var replaceBofqi = function (id, cid, keepold) {
-    if (typeof cid !== 'number') replaceBofqiAll(id, cid);
+    if (typeof cid !== 'number') return replaceBofqiAll(id, cid);
     var oldBofqi = document.querySelector('#bofqi');
     var newBofqi = createNewBofqi(id.aid, cid);
     oldBofqi.parentNode.insertBefore(newBofqi, oldBofqi);
