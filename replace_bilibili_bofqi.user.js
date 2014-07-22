@@ -2518,7 +2518,6 @@ else setTimeout(cosmos, 0);
     return d.textContent;
   };
 
-  (function () {
     var r = location.href.match(/http:\/\/[^\/]*\/video\/bangumi-two-(\d+).html/);
     if (!r || !r[1]) return;
     page = Number(r[1]);
@@ -2529,7 +2528,7 @@ else setTimeout(cosmos, 0);
       loaded = true;
       active();
     });
-  }());
+
 
   // 显示新番列表
   var showList = function () {
