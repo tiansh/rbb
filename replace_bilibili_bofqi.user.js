@@ -32,7 +32,7 @@ var config = {
   'check': null, // 是否检查替换后是否能正常播放（Boolean，默认true）
   'export': null, // 是否向外部暴露接口（Boolean，默认true）
   'netmax': null, // 通过相邻视频推测时最多检查多少个视频（Number，默认50）
-  'cmenu_type': 'default', // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
+  'cmenu_type': null, // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
   'clean': false, // 这里为true的话会清空所有本地设置，全部使用默认值，上面的所有设置将无效
 };
 
