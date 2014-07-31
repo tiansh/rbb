@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.51
+// @version     2.52
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -47,6 +47,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.52 ：先拿miniloader的api骗一下playurl，如果有问题尝试强制替换
    * 2.51 ：修复在非bangumi-two页面读取新番列表的错误 （#4）
    * 2.50 ：修复404页面或未审核视频生成页面的错误 （#3）
    * 2.49 ：继续修理GM2兼容性
@@ -141,8 +142,8 @@ var cosmos = function () {
           'ua': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0',
         },
       ],
-      'playurl': 'http://interface.bilibili.com/playurl?cid={{cid}}',
-      'player': 'http://interface.bilibili.com/player?id=cid:{{cid}}',
+      'playurl': 'http://interface.bilibili.com/playurl?cid={{cid}}&appkey=8e9fc618fbd41e28',
+      'player': 'http://interface.bilibili.com/player?id=cid:{{cid}}&appkey=8e9fc618fbd41e28',
       'suggest': 'http://{{host}}/suggest?term=av{{aid}}' +
         '&jsoncallback={{callback}}&rnd={{random}}&_={{date}}',
       'html5': 'http://{{host}}/m/html5?aid={{aid}}&page={{pid}}',
