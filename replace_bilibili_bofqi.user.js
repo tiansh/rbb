@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.52
+// @version     2.53
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -701,7 +701,7 @@ var cosmos = function () {
       return !!doc.querySelector('#bofqi embed[src="' + flash + '"]');
     }))) return true;
     if (any(Object.keys(bilibili.url.iframe).map(function (iframe) {
-      return !!doc.querySelector('#bofqi iframe[src^="' + bilibili.url.iframe[iframe] + '"]');
+      return !!doc.querySelector('#bofqi iframe[src^="' + bilibili.url.iframe[iframe] + '"]:not([src*="iqiyi"])');
     }))) return true;
     return false;
   };
