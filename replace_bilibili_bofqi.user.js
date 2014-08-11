@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.53
+// @version     2.54
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -495,7 +495,7 @@ var cosmos = function () {
       'check': true,
       'export': true,
       'netmax': 50,
-      'cmenu_type': 'default',
+      'cmenu_type': 'complete',
     };
     var readConfig = function (key) {
       if (config[key] === null) config[key] = GM_getValue(key, null);
