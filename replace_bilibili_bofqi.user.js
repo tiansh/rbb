@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.54
+// @version     2.55
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -77,8 +77,10 @@ Replace bilibili bofqi
 var preLoaded = (function () {
   // 检查是否是生成用的页面，如果是的话则标记并隐藏内容
   var fakePage = function () {
-    var prefix = '/video/av1/index_1.html';
-    if (location.pathname.indexOf(prefix) !== 0) return false;
+    var prefix1 = '/video/av1/index_1.html';
+    var prefix2 = '/video/av/';
+    if (location.pathname.indexOf(prefix1) !== 0 &&
+      location.pathname.indexOf(prefix2) !== 0) return false;
     if (location.hash.indexOf('rbb=') === 0) return false;
     GM_addStyle('html { display: none; }');
     document.title = '哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili';
@@ -691,7 +693,15 @@ var cosmos = function () {
     pid = Number(hashArg.get('page', href)) ||
       Number(href.replace(/^[^#]*av\d+\/index_(\d+)\.html(\?.*)?(#.*)?$/, '$1')) || null;
     if (!nullpage && pid === null) pid = 1;
-    return { 'aid': aid, 'pid': pid };
+    try {
+      if (aid === 1 && pid === 1 && href.match(/#.*rbb=/)) {
+        var rbb = JSON.parse(hashArg.get('rbb', href));
+        console.log('rbb=%o', rbb);
+        aid = rbb.aid || null; pid = rbb.pid || null;
+      }
+    } catch (e) { }
+    console.log('page %s - aid: %o, pid: %o', href, aid, pid);
+    if (!aid) return null; else return { 'aid': aid, 'pid': pid };
   };
 
   // 检查是否是原生播放器
@@ -1871,6 +1881,27 @@ var cosmos = function () {
 
   debug('Replace bilibili bofqi LOADED.');
 
+
+  // 从URL中截取aid(av), pid号
+  var fixLinks = function () {
+    var links = Array.apply(Array, document.querySelectorAll('a[href*="video/av"]:not([href*="rbb="])'));
+    links.forEach(function (link) {
+      var rbb = 'rbb=' + encodeURIComponent(JSON.stringify(videoPage(link.href)));
+      if (links.indexOf('#') === -1) link.href += '#' + rbb;
+      else link.href += '&' + rbb;
+    });
+  };
+
+  var activeFixLinks = function () {
+    (new MutationObserver(function (mutations) {
+      fixLinks();
+    })).observe(document.body, { 'childList': true, 'subtree': true });
+    fixLinks();
+  };
+  activeFixLinks();
+
+  // 添加hash的内容到此结束
+
   var menuContainer = (function () {
     var container = null;
     return function () {
@@ -1984,6 +2015,57 @@ var cosmos = function () {
     } catch (e2) { }
   };
 
+  // 生成那个rbb对象
+  var genRbb = function (id, wholeMenu, a, cids) {
+    var info = videoInfo.get(id.aid) || {};
+    var pinfo = pageInfo.get(id.aid) || {};
+    var copyrightSelect = false;
+    try {
+      if (pinfo.nodedata.length === Object.keys(info.list).length + 1)
+        if (pinfo.nodedata[0][0].match(/\[\[(.*)\]\]/))
+          copyrightSelect = true;
+    } catch (e) { }
+    a = a || document.createElement('a');
+    var rbb = {
+      'aid': id.aid,
+      'cids': {},
+      'pages': {},
+      'description': info.description || a.getAttribute('txt') || '',
+      'mid': info.mid || 0,
+      'author': info.author || '',
+      'tag': (info.tag || '').split(','),
+      'title': info.title || pinfo.title || a.textContent.trim() || '',
+      'spid': info.spid || 0,
+      'sp_title': info.sp_title || null,
+      'season_id': info.season_id || 0,
+      'copyright_select': copyrightSelect,
+    };
+    if (info.list) {
+      Object.keys(info.list).map(function (i) {
+        var page = info.list[i].page;
+        if (copyrightSelect) page++;
+        rbb.cids[page] = info.list[i].cid;
+        rbb.pages[page] = info.list[i].part;
+      });
+    } else if (pinfo.nodedata && !wholeMenu) {
+      if (pinfo.nodedata.length === 0) {
+        rbb.pages[1] = '';
+        rbb.cids[1] = null;
+      } else pinfo.nodedata.map(function (nodedata, i) {
+        rbb.pages[i + 1] = nodedata[0];
+        rbb.cids[i + 1] = null;
+      });
+    } else if (cids) {
+      Object.keys(cids).map(function (pid) {
+        rbb.pages[pid] = ((pinfo.nodedata || [])[pid - 1] || {})[0] || '';
+        rbb.cids[pid] = cids[pid];
+      });
+    } else {
+      return null;
+    }
+    return rbb;
+  };
+
   // 对某个视频显示选项菜单
   var showMenu = function (a, id, position) {
     var oldOnclick = a.onclick;
@@ -1995,6 +2077,8 @@ var cosmos = function () {
       var configMenu = bilibili.config.cmenu_type;
       var wholeMenu = cids && inSite === false || !isOrigen;
       if (configMenu === 'complete') wholeMenu = true;
+      var rbb = genRbb(id, wholeMenu, a, cids);
+      // code copy genRbb
       var info = videoInfo.get(id.aid) || {};
       var pinfo = pageInfo.get(id.aid) || {};
       var copyrightSelect = false;
@@ -2002,48 +2086,13 @@ var cosmos = function () {
         if (pinfo.nodedata.length === Object.keys(info.list).length + 1)
           if (pinfo.nodedata[0][0].match(/\[\[(.*)\]\]/))
             copyrightSelect = true;
-      } catch (e) {}
-      var rbb = {
-        'aid': id.aid,
-        'cids': {},
-        'pages': {},
-        'description': info.description || a.getAttribute('txt') || '',
-        'mid': info.mid || 0,
-        'author': info.author || '',
-        'tag': (info.tag || '').split(','),
-        'title': info.title || pinfo.title || a.textContent || '',
-        'spid': info.spid || 0,
-        'sp_title': info.sp_title || null,
-        'season_id': info.season_id || 0,
-        'copyright_select': copyrightSelect,
-      };
-      if (info.list) {
-        Object.keys(info.list).map(function (i) {
-          var page = info.list[i].page;
-          if (copyrightSelect) page++;
-          rbb.cids[page] = info.list[i].cid;
-          rbb.pages[page] = info.list[i].part;
-        });
-      } else if (pinfo.nodedata && !wholeMenu) {
-        if (pinfo.nodedata.length === 0) {
-          rbb.pages[1] = '';
-          rbb.cids[1] = null;
-        } else pinfo.nodedata.map(function (nodedata, i) {
-          rbb.pages[i + 1] = nodedata[0];
-          rbb.cids[i + 1] = null;
-        });
-      } else if (cids) {
-        Object.keys(cids).map(function (pid) {
-          rbb.pages[pid] = ((pinfo.nodedata || [])[pid - 1] || {})[0] || '';
-          rbb.cids[pid] = cids[pid];
-        });
-      } else {
-        return (menu = choseMenu([{
-          'title': rbb.title || bilibili.text.fail.default,
-          'href': a.href,
-          'submenu': [],
-        }], null, position));
-      }
+      } catch (e) { }
+      // code copy end
+      if (!rbb) return (menu = choseMenu([{
+        'title': bilibili.text.fail.default,
+        'href': a.href,
+        'submenu': [],
+      }], null, position));
       var pids = Object.keys(rbb.cids).map(Number)
         .sort(function (x, y) { return x - y; });
       if (cids) pids = pids.filter(function (pid, i) {
@@ -2168,7 +2217,8 @@ var cosmos = function () {
       while (a && a.tagName && ['A', 'AREA'].indexOf(a.tagName.toUpperCase()) === -1) a = a.parentNode;
       if (a && a.href) debug('Pressed <a href="%s">', a.href);
       // 检查链接是视频页面
-      if (!a || !a.href || !(id = videoPage(a.href, true)) || id.aid === 1) return;
+      if (!a || !a.href || !(id = videoPage(a.href, true)) ||
+        bilibili.video.ignore.indexOf(id.aid) !== -1) return;
       if (!(function () {
         for (var p = a; p && typeof p.className === 'string'; p = p.parentNode) {
         // 检查链接不在菜单内
@@ -2227,6 +2277,7 @@ var cosmos = function () {
     holdMouse();
     addStyle();
     initShowMsg();
+    activeFixLinks();
     return ret;
   };
 
@@ -2303,11 +2354,23 @@ var cosmos = function () {
 
   };
 
+  // 如果打开页面时rbb数组里面没什么东西，那么就先试图加载来东西
+  var loadCidFirst = function (id) {
+    getCidAPI.concat(getCidDirect)(id, function (cids) {
+      var rbb = genRbb(id, true);
+      if (!rbb.cids || !rbb.pages) showMsg(bilibili.text.fail.network, 1e5, 'warning');
+      else genFakePage(rbb);
+    }, function () {
+      showMsg(bilibili.text.fail.network, 1e5, 'warning');
+    });
+  };
+
   // 使用av1/index_1.html作为显示生成的页面的临时页面
-  (function () {
-    if (!preLoaded.fakePage) return;
-    var rbb = JSON.parse(hashArg.get('rbb'));
-    if (videoPage(location.href).aid !== rbb.aid) try {
+  var genFakePage = function (rbb) {
+    rbb = rbb || JSON.parse(hashArg.get('rbb'));
+    try {
+      console.log('rbb: %o', rbb);
+      if (!rbb.cids) return loadCidFirst(rbb);
       var content = genXML(bilibili.html.page, {
         'aid': rbb.aid,
         'mid': rbb.mid,
@@ -2342,8 +2405,10 @@ var cosmos = function () {
     } catch (e) {
       debug('Error while replacing page: %o', e);
     }
+    activeFixLinks();
     GM_addStyle('html { display: block !important; }');
-  }());
+  }
+  if (preLoaded.fakePage) genFakePage();
 
   // 向unsafeWindow暴露一系列接口以供其他函数调用
   var exportHandler = (function () {
@@ -2539,12 +2604,13 @@ else setTimeout(cosmos, 0);
     var listtype = document.querySelector('.vd_list li').className;
     data.forEach(function (video) {
       var c = document.createElement('ul');
+      var url = '/video/av' + (video.visible === 'mobile' ? '1/index_1.html#rbb={%22aid%22:' + video.aid + '}' : video.aid + '/');
       c.innerHTML = [
         '<li class="', listtype, '" bangumi-visable="', video.visible, '">',
-          '<a class="preview" target="_blank" href="/video/av', video.aid, '/">',
+          '<a class="preview" target="_blank" href="' + url + '">',
             '<img src="', xmlEscape(video.pic), '">',
           '</a>',
-          '<a class="title" target="_blank" href="/video/av', video.aid, '/">', xmlEscape(video.title), '</a>',
+          '<a class="title" target="_blank" href="' + url + '">', xmlEscape(video.title), '</a>', // modified
           '<div class="w_info">',
             '<i class="gk" title="观看">', formatFriendlyNumber(video.play), '</i>',
             '<i class="sc" title="收藏">', formatFriendlyNumber(video.favorites), '</i>',
@@ -2805,3 +2871,6 @@ var addStyle = function () {
   ].join(''));
 };
 addStyle();
+
+
+
