@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.55
+// @version     2.56
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -47,24 +47,16 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.56 ： /video/av 自动跳转 /video/av1/index1.html 处理 iqiyi 可以显示顶栏底栏
+   * 2.55 ：电脑端不显示的默认“生成页面”，所有链接上加hash以解决自动跳转问题，生成页面处理 /video/av/ ，生成页面可以只拿着aid 生成 (#7)
+   * 2.54 ：默认长按菜单出生成页面的链接，彻底解决 (#6)；强制显示“生成页面”链接不再需要 #3 中提到的修改 
+   * 2.53 ：iqiyi使用 secure.bilibili.com/secure, 页面？
    * 2.52 ：先拿miniloader的api骗一下playurl，如果有问题尝试强制替换
    * 2.51 ：修复在非bangumi-two页面读取新番列表的错误 （#4）
    * 2.50 ：修复404页面或未审核视频生成页面的错误 （#3）
    * 2.49 ：继续修理GM2兼容性
    * 2.48 ：兼容GM2，修正版权番选择播放器的视频的长按菜单
    * 2.47 ：版权番选择播放器的视频会随机选择一个可以替换的视频做替换
-   * 2.46 ：支持版权番选择播放器的视频
-   * 2.45 ：完善对 bilibili.com 域名的支持，添加对Fx32+GM1的支持（请手动开启）
-   * 2.44 ：支持 bilibili.com 域名，并以其为默认域名
-   * 2.43 ：添加一个补档页面使用的接口获取视频信息
-   * 2.42 ：使用 bilibili.com 域名替换 interface, api
-   * 2.41 ：修复显示隐藏视频时对XML字符的二次转义
-   * 2.40 ：修理强制替换框不会立即消失的错误
-   * 2.39 ：添加对撞车视频的处理
-   * 2.38 ：因为API调用有频率限制，减少API调用，可能时优先考虑使用getPageList
-   * 2.37 ：元素属性上区别找到的隐藏视频和原来的视频，搜索相邻视频显示进度
-   * 2.36 ：二次元新番列表显示对手机隐藏的视频
-   * 2.35 ：修理无法找到不对应aid的视频的问题（#2）
    * 之前的版本请到 https://github.com/tiansh/rbb/blob/master/CHANGELOG.md 查看
 
 
@@ -79,11 +71,15 @@ var preLoaded = (function () {
   var fakePage = function () {
     var prefix1 = '/video/av1/index_1.html';
     var prefix2 = '/video/av/';
-    if (location.pathname.indexOf(prefix1) !== 0 &&
-      location.pathname.indexOf(prefix2) !== 0) return false;
+    var match1 = location.pathname.indexOf(prefix1) === 0;
+    var match2 = location.pathname.indexOf(prefix2) === 0;
+    if (!match1 && !match2) return false;
     if (location.hash.indexOf('rbb=') === 0) return false;
-    GM_addStyle('html { display: none; }');
-    document.title = '哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili';
+    if (match2) location.replace(location.href.replace(prefix2, prefix1));
+    else {
+      GM_addStyle('html { display: none; }');
+      document.title = '哔哩哔哩 - ( ゜- ゜)つロ 乾杯~ - bilibili';
+    }
     return true;
   };
   return {

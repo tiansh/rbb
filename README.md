@@ -70,7 +70,9 @@ flash参数中"cid"或"\*-cid"可以提供cid
 
 ## 检查是否可以正常播放 ##
 
-<code>http://interface.bilibili.com/playurl?cid={cid}</code>
+<code>http://interface.bilibili.com/playurl?cid={cid}&passkey={passkey}[&sign={sign}]</code>
+
+有些<code>passkey</code>的情况下sign可选。
 
 如果返回succ或suee则说明成功
 

@@ -92,7 +92,7 @@
 <body>
 <div id="main-body" itemscope itemtype="http://schema.org/SoftwareApplication">
   <h1 itemprop="name">Replace bilibili bofqi</h1>
-  <div id="version">最新版本：<span itemprop="softwareVersion">2.52</span></div>
+  <div id="version">最新版本：<span itemprop="softwareVersion">2.56</span></div>
   <header>
     <ul id="intro">
       <li><strong>替换bilibili播放器为原生播放器</strong></li>
@@ -244,16 +244,16 @@
   <h3>更新历史</h3>
   <div class="in">
     <ul>
+      <li>2.56 ： /video/av 自动跳转 /video/av1/index1.html 处理 iqiyi 可以显示顶栏底栏</li>
+      <li>2.55 ：电脑端不显示的默认“生成页面”，所有链接上加hash以解决自动跳转问题，生成页面处理 /video/av/ ，生成页面可以只拿着aid 生成 (#7)</li>
+      <li>2.54 ：默认长按菜单出生成页面的链接，彻底解决 (#6)；强制显示“生成页面”链接不再需要 #3 中提到的修改 </li>
+      <li>2.53 ：iqiyi使用 secure.bilibili.com/secure, 页面？</li>
       <li>2.52 ：先拿miniloader的api骗一下playurl，如果有问题尝试强制替换</li>
       <li>2.51 ：修复在非bangumi-two页面读取新番列表的错误 （<a href="https://github.com/tiansh/rbb/issues/4">#4</a>）</li>
       <li>2.50 ：修复404页面或未审核视频生成页面的错误 （<a href="https://github.com/tiansh/rbb/issues/3">#3</a>）</li>
       <li>2.49 ：继续修理GM2兼容性</li>
       <li>2.48 ：兼容GM2，修正版权番选择播放器的视频的长按菜单</li>
       <li>2.47 ：版权番选择播放器的视频会随机选择一个可以替换的视频做替换</li>
-      <li>2.46 ：支持版权番选择播放器的视频</li>
-      <li>2.45 ：完善对 bilibili.com 域名的支持</li>
-      <li>2.44 ：支持 bilibili.com 域名，并以其为默认域名</li>
-      <li>2.43 ：添加一个补档页面使用的接口获取视频信息</li>
       <li>之前的版本请到 https://github.com/tiansh/rbb/blob/master/CHANGELOG.md 查看</li>
     </ul>
   </div>
