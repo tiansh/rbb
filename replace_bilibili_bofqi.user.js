@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.56
+// @version     2.57
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -47,6 +47,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.57 ：修理视频标签和专题列表部分显示问题
    * 2.56 ： /video/av 自动跳转 /video/av1/index1.html 处理 iqiyi 可以显示顶栏底栏
    * 2.55 ：电脑端不显示的默认“生成页面”，所有链接上加hash以解决自动跳转问题，生成页面处理 /video/av/ ，生成页面可以只拿着aid 生成 (#7)
    * 2.54 ：默认长按菜单出生成页面的链接，彻底解决 (#6)；强制显示“生成页面”链接不再需要 #3 中提到的修改 
@@ -310,6 +311,7 @@ var cosmos = function () {
           '<script type="text/javascript" src="http://static.hdslb.com/js/video.min.js"></script>',
         '</head>',
         '<body>',
+        '<script type="text/javascript">biliAdjust(); $(function(){ biliAdjust(true); $(window).resize(biliAdjust); });</script>',
         '<div class="z">',
           // 关灯用
           '<div id="heimu"></div>',
@@ -468,12 +470,12 @@ var cosmos = function () {
         'if (AttentionList) {',
           'for (i in AttentionList) {',
             'o = AttentionList[i];',
-            'if ((o < 0) && (o * -1) == {{spid}})',
+            'if ((o < 0) && (o * -1) == spid)',
             'isSpAtt = isSpFav = "1";',
           '}',
         '}',
         'try { showSpAdbtn(); } catch (e2) { }',
-      ].join(''),
+      '}());'].join(''),
     },
   };
   if (bilibili.url.host.indexOf(bilibili.host) === -1)
