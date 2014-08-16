@@ -71,9 +71,9 @@
 
       var browser_list = document.getElementsByClassName('browser'), i, height;
       if (type === 'ie') document.getElementById('ie').style.display = 'block';
-      else if (type === 'safari' || type === 'chrome' && odd)
+      else if (type === 'chrome' && odd) {
         document.getElementById('odd-webkit').style.display = 'block';
-      else if (type) {
+      } else if (type) {
         for (i = 0; i < browser_list.length; i++)
           if (browser_list[i].id !== type)
             browser_list[i].className += ' hidden';
@@ -156,6 +156,13 @@
         <div class="in">
           <div>可以使用Violent monkey附加组件吗？</div>
           <div>本脚本同样支持最新版的Violent monkey，可能有少量兼容性问题，所以不推荐使用Violent monkey运行本脚本。但这些兼容问题不影响一般使用。</div>
+        </div>
+      </div>
+      <div id="safari" class="browser">
+        <a href="http://www.apple.com/cn/support/mac-apps/safari/" class="browser-icon"><img src="img/logo/safari.png" alt="Safari" width="64" height="64" /></a>
+        <div>
+          使用Safari的用户，需要安装<a href="http://javascript-blocker.toggleable.com">JavaScript Blocker</a>以运行本脚本。<br />
+          如果您已经安装了这个扩展，<a href="replace_bilibili_bofqi.user.js">点此安装本脚本</a>，在打开的页面中确认脚本安装；之后浏览bilibili的网页，在JavaScript Blocker的下拉菜单中允许本脚本执行。
         </div>
       </div>
       <a id="showall" href="javascript: void(0)" style="display: none;">显示所有支持的浏览器</a>
