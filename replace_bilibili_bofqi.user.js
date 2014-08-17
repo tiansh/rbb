@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.58
+// @version     2.59
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -48,6 +48,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.59 ：新的 html5 接口链接
    * 2.58 ：可选不向链接的锚点添加数据（启用后iqiyi视频必须使用生成页面）
    * 2.57 ：修理视频标签和专题列表部分显示问题
    * 2.56 ： /video/av 自动跳转 /video/av1/index1.html 处理 iqiyi 可以显示顶栏底栏
@@ -147,7 +148,7 @@ var cosmos = function () {
       'player': 'http://interface.bilibili.com/player?id=cid:{{cid}}&appkey=8e9fc618fbd41e28',
       'suggest': 'http://{{host}}/suggest?term=av{{aid}}' +
         '&jsoncallback={{callback}}&rnd={{random}}&_={{date}}',
-      'html5': 'http://{{host}}/m/html5?aid={{aid}}&page={{pid}}',
+      'html5': 'http://m.acg.tv/m/html5?aid={{aid}}&page={{pid}}',
       'pagelist': 'http://{{host}}/widget/getPageList?aid={{aid}}',
       'arc': 'http://{{host}}/html/arc/{{aid}}.html',
     },
@@ -2873,6 +2874,3 @@ var addStyle = function () {
   ].join(''));
 };
 addStyle();
-
-
-
