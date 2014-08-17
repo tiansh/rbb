@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.57
+// @version     2.58
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -33,6 +33,7 @@ var config = {
   'export': null, // 是否向外部暴露接口（Boolean，默认true）
   'netmax': null, // 通过相邻视频推测时最多检查多少个视频（Number，默认50）
   'cmenu_type': null, // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
+  'hasharg': null, // 是否向所有链接的锚点中加入 rbb 参数（Boolean，默认true）
   'clean': false, // 这里为true的话会清空所有本地设置，全部使用默认值，上面的所有设置将无效
 };
 
@@ -47,6 +48,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.58 ：可选不向链接的锚点添加数据（启用后iqiyi视频必须使用生成页面）
    * 2.57 ：修理视频标签和专题列表部分显示问题
    * 2.56 ： /video/av 自动跳转 /video/av1/index1.html 处理 iqiyi 可以显示顶栏底栏
    * 2.55 ：电脑端不显示的默认“生成页面”，所有链接上加hash以解决自动跳转问题，生成页面处理 /video/av/ ，生成页面可以只拿着aid 生成 (#7)
@@ -496,6 +498,7 @@ var cosmos = function () {
       'export': true,
       'netmax': 50,
       'cmenu_type': 'complete',
+      'hasharg': true,
     };
     var readConfig = function (key) {
       if (config[key] === null) config[key] = GM_getValue(key, null);
@@ -580,7 +583,7 @@ var cosmos = function () {
     // 向地址的本地参数中设置参数
     var set = function (key, val, a) {
       var f = false;
-      var str = key + '=' + encodeURIComponent(val);
+      var str = val === null ? '' : key + '=' + encodeURIComponent(val);
       if (typeof a === 'string') a = href2A(a);
       var hash = ((a || location).hash || '#').slice(1).split('&').map(function (kv) {
         var arg = kv.match(/^([^=]*)=(.*)$/);
@@ -1891,6 +1894,7 @@ var cosmos = function () {
   };
 
   var activeFixLinks = function () {
+    if (config.hasharg === false) return;
     (new MutationObserver(function (mutations) {
       fixLinks();
     })).observe(document.body, { 'childList': true, 'subtree': true });
