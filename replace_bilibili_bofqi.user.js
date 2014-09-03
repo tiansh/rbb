@@ -5,7 +5,7 @@
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.59
+// @version     2.60
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -21,7 +21,6 @@
 // @run-at      document-start
 // ==/UserScript==
 
-
 // 如果想要修改程序的相关配置，可以直接在这里修改。
 // 这些配置会存储到文件中，因此即便自动升级，也会保留之前的配置，不必禁用自动升级。
 // 如果为null则表示这里将使用原来设置的值或默认值。
@@ -33,7 +32,7 @@ var config = {
   'export': null, // 是否向外部暴露接口（Boolean，默认true）
   'netmax': null, // 通过相邻视频推测时最多检查多少个视频（Number，默认50）
   'cmenu_type': null, // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
-  'hasharg': null, // 是否向所有链接的锚点中加入 rbb 参数（Boolean，默认true）
+  'hasharg': true, // 是否向所有链接的锚点中加入 rbb 参数（Boolean，默认true）
   'clean': false, // 这里为true的话会清空所有本地设置，全部使用默认值，上面的所有设置将无效
 };
 
@@ -48,6 +47,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.60 ：临时修正（应该没用）
    * 2.59 ：新的 html5 接口链接
    * 2.58 ：可选不向链接的锚点添加数据（启用后iqiyi视频必须使用生成页面）
    * 2.57 ：修理视频标签和专题列表部分显示问题
@@ -324,6 +324,15 @@ var cosmos = function () {
               '<h2 title="{{title}}">{{title}}</h2><div class="arcrank"></div>',
               '<div class="tminfo" xmlns:v="http://rdf.data-vocabulary.org/#">&nbsp;</div>',
               '<div class="sf">',
+                '<div class="app" id="app_qrcode_box">',
+                  '<a class="app-link"></a>',
+                  '<div class="qr-code-box">',
+                      '<a href="http://app.bilibili.com/" target="_blank">',
+                          '<div class="qr-code" id="qr_code"></div>',
+                          '<p>用手机客户端扫一扫</p>',
+                      '</a>',
+                  '</div>',
+                '</div>',
                 '<a href="/ass/{{aid}}.html" class="ass" target="_blank" id="assdown"></a>',
                 '<a onclick="goQuote();" class="f" style="visibility:hidden!important"></a>',
                 '<a href="http://{{host}}/m/stow?aid={{aid}}" onclick="return showStow({{aid}},this);" ',
@@ -522,7 +531,8 @@ var cosmos = function () {
 
   // 打印调试信息
   var debug = (function () {
-    if (bilibili.config.debug) return console.log.bind(console);
+    if (bilibili.config.debug && console && console.log)
+      try { return console.log.bind(console); } catch (e) { }
     return function () { };
   }());
 
@@ -676,7 +686,7 @@ var cosmos = function () {
           button.addEventListener('click', buttons[i].click);
         });
         return msgbox;
-      } catch (e) { console.log('failed to show this message: %o', e); }
+      } catch (e) { debug('failed to show this message: %o', e); }
     };
     showMsg.gotCid = function (cid) {
       if (cid) msgBox.setAttribute('cid', cid);
@@ -698,11 +708,11 @@ var cosmos = function () {
     try {
       if (aid === 1 && pid === 1 && href.match(/#.*rbb=/)) {
         var rbb = JSON.parse(hashArg.get('rbb', href));
-        console.log('rbb=%o', rbb);
+        debug('rbb=%o', rbb);
         aid = rbb.aid || null; pid = rbb.pid || null;
       }
     } catch (e) { }
-    console.log('page %s - aid: %o, pid: %o', href, aid, pid);
+    debug('page %s - aid: %o, pid: %o', href, aid, pid);
     if (!aid) return null; else return { 'aid': aid, 'pid': pid };
   };
 
@@ -740,6 +750,7 @@ var cosmos = function () {
     if (!document.querySelector('.z-msg') &&
       !document.querySelector('#bofqi') &&
       !document.querySelector('.errmsg') &&
+      !document.querySelector('.container .notice') &&
       document.title !== 'bilibili - 提示') return null;
     // 忽略已经使用原生播放器的视频
     if (isBilibiliBofqi(document)) return null;
@@ -2372,7 +2383,7 @@ var cosmos = function () {
   var genFakePage = function (rbb) {
     rbb = rbb || JSON.parse(hashArg.get('rbb'));
     try {
-      console.log('rbb: %o', rbb);
+      debug('rbb: %o', rbb);
       if (!rbb.cids) return loadCidFirst(rbb);
       var content = genXML(bilibili.html.page, {
         'aid': rbb.aid,

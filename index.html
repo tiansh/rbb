@@ -45,34 +45,24 @@
     ul { margin: 0; }
   </style>
   <script>
-    window.onload = function () {
+    var browser = function () {
       var ua = navigator.userAgent;
-      var odd = false, type = null;
-
-      // 如果这漏了某个浏览器一定要告诉我～
-      if (ua.match(/sogou\.com/i)) odd = true;
-      if (ua.match(/soso\.com/i)) odd = true;
-      if (ua.match(/TencentTraveler/i)) odd = true;
-      if (ua.match(/QQBrowser/i)) odd = true;
-      if (ua.match(/360se/i)) odd = true;
-      if (ua.match(/TheWorld/i)) odd = true;
-      if (ua.match(/MetaSr/i)) odd = true;
-      if (ua.match(/baidubrowser/i)) odd = true;
-      if (ua.match(/Maxthon/i)) odd = true;
-      if (ua.match(/LBBrowser/i)) odd = true;
-
-      if (ua.match(/MSIE/)) type = 'ie';
-      if (ua.match(/Trident/)) type = 'ie';
-      if (ua.match(/Firefox/)) type = 'firefox';
-      if (ua.match(/Safari/)) type = 'safari';
-      if (ua.match(/Chrome/)) type = 'chrome';
-      if (ua.match(/Opera/)) type = 'opera';
-      if (ua.match(/OPR/)) type = 'opera';
-
+      if (ua.match(/^Mozilla\/[\d.]+ \(compatible; MSIE [\d.]+; Windows NT[^)]*\)$/)) return 'ie';
+      if (ua.match(/^Mozilla\/5.0 \(Windows NT [\d.]+;( [^)]+;)? Trident\/[\d.]+;( [^)]+;)? rv:[\d.]+\) like Gecko$/)) return 'ie';
+      if (ua.match(/^Mozilla\/5.0 \([^)]+; rv:[\d.]+\) Gecko\/[\d]{8} Firefox\/[\d.]+$/)) return 'firefox';
+      if (ua.match(/^Opera\/[\d.]+ \([^)]+\) Presto\/[\d.]+ Version\/[\d.]+$/)) return 'opera';
+      if (ua.match(/^Mozilla\/5.0 \(Macintosh; [^)]+\) AppleWebKit\/[\d.+]+ \(KHTML, like Gecko\) Version\/[\d.]+ Safari\/[\d.]+$/)) return 'safari';
+      if (ua.match(/^Mozilla\/5.0 \([^)]+\) AppleWebKit\/[\d.+]+ \(KHTML, like Gecko\) Chrome\/[\d.]+ Safari\/[\d.]+$/)) return 'chrome';
+      if (ua.match(/^Mozilla\/5.0 \([^)]+\) AppleWebKit\/[\d.+]+ \(KHTML, like Gecko\) Chrome\/[\d.]+ Safari\/[\d.]+ OPR\/[\d.]+$/)) return 'opera';
+      if (ua.match(/AppleWebKit/)) return 'odd';
+      return null;
+    };
+    window.onload = function () {
+      var type = browser();
       var browser_list = document.getElementsByClassName('browser'), i, height;
       if (type === 'ie') document.getElementById('ie').style.display = 'block';
-      else if (type === 'chrome' && odd) {
-        document.getElementById('odd-webkit').style.display = 'block';
+      else if (type === 'odd') {
+        document.getElementById('odd').style.display = 'block';
       } else if (type) {
         for (i = 0; i < browser_list.length; i++)
           if (browser_list[i].id !== type)
@@ -92,7 +82,7 @@
 <body>
 <div id="main-body" itemscope itemtype="http://schema.org/SoftwareApplication">
   <h1 itemprop="name">Replace bilibili bofqi</h1>
-  <div id="version">最新版本：<span itemprop="softwareVersion">2.59</span></div>
+  <div id="version">最新版本：<span itemprop="softwareVersion">2.60</span></div>
   <header>
     <ul id="intro">
       <li><strong>替换bilibili播放器为原生播放器</strong></li>
@@ -122,10 +112,10 @@
         <span class="warning">本脚本不支持IE浏览器！</span><br />
         本脚本不支持IE浏览器，请考虑从下面列出的三个浏览器中选择一个使用，点击浏览器图标以进入下载页面。
       </div>
-      <div id="odd-webkit" class="browser error" style="display: none;">
+      <div id="odd" class="browser error" style="display: none;">
         <span class="browser-icon"><img src="img/logo/warning.png" alt="Chromium" width="64" height="64" /></span>
         <span class="warning">本脚本可能不能很好地支持您使用的浏览器！</span><br />
-        本脚本不支持Safari浏览器和一些分支自Chromium浏览器的浏览器。
+        <strong>本脚本不支持Windows上的Safari浏览器和一些分支自Chromium的浏览器。</strong><br />
         虽然您可以参考Chrome用户的使用方法安装本脚本，但我<strong>不保证</strong>在其上的运行效果，也<strong>不接受</strong>任何在这些浏览器上运行出现问题的错误报告。<br />
         建议您考虑使用下面列出的浏览器，点击浏览器图标以进入下载页面。
       </div>
@@ -161,7 +151,7 @@
       <div id="safari" class="browser">
         <a href="http://www.apple.com/cn/support/mac-apps/safari/" class="browser-icon"><img src="img/logo/safari.png" alt="Safari" width="64" height="64" /></a>
         <div>
-          使用Safari的用户，需要安装<a href="http://javascript-blocker.toggleable.com">JavaScript Blocker</a>以运行本脚本。<br />
+          在麦金塔系统上使用Safari的用户，需要安装<a href="http://javascript-blocker.toggleable.com">JavaScript Blocker</a>以运行本脚本。<br />
           如果您已经安装了这个扩展，<a href="replace_bilibili_bofqi.user.js">点此安装本脚本</a>，在打开的页面中确认脚本安装；之后浏览bilibili的网页，在JavaScript Blocker的下拉菜单中允许本脚本执行。
         </div>
       </div>
@@ -251,6 +241,7 @@
   <h3>更新历史</h3>
   <div class="in">
     <ul>
+      <li>2.60 ：临时修正（应该没用）</li>
       <li>2.59 ：新的 html5 接口链接</li>
       <li>2.58 ：可选不向链接的锚点添加数据（启用后iqiyi视频必须使用生成页面）</li>
       <li>2.57 ：修理视频标签和专题列表部分显示问题</li>
