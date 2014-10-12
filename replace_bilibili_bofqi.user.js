@@ -1,11 +1,11 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name        Replace bilibili bofqi
 // @namespace   http://userscripts.org/users/ts
 // @description 替换哔哩哔哩弹幕网（bilibili.com, bilibili.tv, bilibili.kankanews.com）播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.60
+// @version     2.61
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -16,10 +16,13 @@
 // @grant       unsafeWindow
 // @author      田生
 // @copyright   2013+, 田生
-// @license     GPL version 3 or any later version; http://www.gnu.org/copyleft/gpl.html
-// @license     CC Attribution-ShareAlike 4.0 International; http://creativecommons.org/licenses/by-sa/4.0/
+// @license     Mozilla Public License; https://www.mozilla.org/MPL/
 // @run-at      document-start
 // ==/UserScript==
+
+/* 
+ * 有！人！接！坑！吗！
+ */
 
 // 如果想要修改程序的相关配置，可以直接在这里修改。
 // 这些配置会存储到文件中，因此即便自动升级，也会保留之前的配置，不必禁用自动升级。
@@ -32,7 +35,7 @@ var config = {
   'export': null, // 是否向外部暴露接口（Boolean，默认true）
   'netmax': null, // 通过相邻视频推测时最多检查多少个视频（Number，默认50）
   'cmenu_type': null, // 是否显示复杂的菜单项（String，"default"需要时 "complete"总是 "simple"从不）
-  'hasharg': true, // 是否向所有链接的锚点中加入 rbb 参数（Boolean，默认true）
+  'hasharg': null, // 是否向所有链接的锚点中加入 rbb 参数（Boolean，默认true）
   'clean': false, // 这里为true的话会清空所有本地设置，全部使用默认值，上面的所有设置将无效
 };
 
@@ -47,6 +50,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.61 ：修正对原站播放器的识别，不替换原站播放器视频
    * 2.60 ：临时修正（应该没用）
    * 2.59 ：新的 html5 接口链接
    * 2.58 ：可选不向链接的锚点添加数据（启用后iqiyi视频必须使用生成页面）
@@ -418,7 +422,7 @@ var cosmos = function () {
       'list': [
         'http://static.hdslb.com/js/jquery.min.js',
         'http://static.hdslb.com/js/jquery-ui.min.js',
-        'http://static.hdslb.com/js/base.core.v2.js',
+        'http://static.hdslb.com/js/base.core.v3.js',
         'http://static.hdslb.com/js/page.arc.js',
         'http://static.hdslb.com/js/video.min.js',
       ],
@@ -620,17 +624,6 @@ var cosmos = function () {
     return { 'get': get, 'set': set };
   }());
 
-  // 获取元素在页面上的位置
-  var getPosition = function (e) {
-    var ret = { 'top': 0, 'left': 0 };
-    while (e.offsetTop) {
-      ret.top += e.offsetTop;
-      ret.left += e.offsetLeft;
-      e = e.parentNode;
-    }
-    return ret;
-  };
-
   // 注册和调用一些函数用的
   var callbackEvents = function () {
     var funcs = [];
@@ -650,8 +643,7 @@ var cosmos = function () {
     if (msgBox) return msgBox;
     msgBox = document.createElement('div'); msgBox.id = 'rbb-message';
     document.body.parentNode.appendChild(msgBox);
-    try { msgBox.style.top = getPosition(document.querySelector('.viewbox .info')).top + 'px'; }
-    catch (e) { msgBox.style.top = '32px'; }
+    msgBox.style.top = '80px';
     return msgBox;
   };
 
@@ -659,9 +651,7 @@ var cosmos = function () {
     var mb = document.createElement('div');
     mb.innerHTML = genXML(bilibili.html.msgbox, { 'text': text, 'type': type });
     mb = mb.firstChild;
-    try { pos = getPosition(rel); } catch (e) { pos = { 'top': 0, 'left': 0 }; }
-    mb.style.left = pos.left + 'px';
-    mb.style.top = pos.top + 'px';
+    mb.style.left = '0px'; mb.style.top = '80px';
     if (zIndex) mb.style.zIndex = zIndex;
     if (timeout > 0) setTimeout(function () { mb.parentNode.removeChild(mb); }, timeout);
     document.body.appendChild(mb);
@@ -725,6 +715,10 @@ var cosmos = function () {
     if (any(Object.keys(bilibili.url.iframe).map(function (iframe) {
       return !!doc.querySelector('#bofqi iframe[src^="' + bilibili.url.iframe[iframe] + '"]:not([src*="iqiyi"])');
     }))) return true;
+    if ((function () {
+      var scr = document.querySelector('#bofqi script');
+      return scr && scr.textContent.indexOf('EmbedPlayer') !== -1;
+    }())) return true;
     return false;
   };
 
