@@ -50,6 +50,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.62 ：修复个人页面的兼容性
    * 2.61 ：修正对原站播放器的识别，不替换原站播放器视频
    * 2.60 ：临时修正（应该没用）
    * 2.59 ：新的 html5 接口链接
@@ -563,16 +564,16 @@ var cosmos = function () {
     };
   }());
   var genURL = function (url) {
-    var datas = Array.apply(Array, arguments).slice(1).concat(bilibili);
+    var datas = [].slice.call(arguments, 0).slice(1).concat(bilibili);
     return genStr(url, encodeURIComponent, datas);
   };
   var genXML = function (xml) {
     var datas = [{ '<': '{', '>': '}' }]
-      .concat(Array.apply(Array, arguments).slice(1)).concat(bilibili);
+      .concat([].slice.call(arguments, 0).slice(1)).concat(bilibili);
     return genStr(xml, function (s) { return s; }, datas);
   };
   var genCode = function (url) {
-    var datas = Array.apply(Array, arguments).slice(1).concat(bilibili);
+    var datas = [].slice.call(arguments, 0).slice(1).concat(bilibili);
     return genStr(url, function (s) { return JSON.stringify(s); }, datas);
   };
 
@@ -672,7 +673,7 @@ var cosmos = function () {
       try {
         var msgbox = genMsgBox(msgBox, text, timeout, type, zIndex++);
         var buttonList = msgbox.querySelectorAll('button');
-        Array.apply(Array, buttonList).forEach(function (button, i) {
+        [].slice.call(buttonList, 0).forEach(function (button, i) {
           button.addEventListener('click', buttons[i].click);
         });
         return msgbox;
@@ -766,7 +767,7 @@ var cosmos = function () {
   // regist注册一个函数
   // concat与其他的getId连接
   var getId = function () {
-    var funclist = Array.apply(Array, arguments);
+    var funclist = [].slice.call(arguments, 0);
     var outer = !!funclist.length;
     // 注册一种查找方法
     var regist = function (func) {
@@ -775,7 +776,7 @@ var cosmos = function () {
     };
     // 依次使用几个getId
     var concat = function () {
-      var funcs = Array.apply(Array, arguments);
+      var funcs = [].slice.call(arguments, 0);
       if (!outer) {
         funcs = [this].concat(funcs);
         return getId.apply(this, funcs);
@@ -1255,7 +1256,7 @@ var cosmos = function () {
         while (nextCid.length > lastCid.length) lastCid.push(lastCid[lastCid.length - 1]);
         var failCount = 0, cid = {};
         var cids = nextCid.map(function (n, i) {
-          return Array.apply(Array, Array(nextCid[i] - lastCid[i] + 1))
+          return [].slice.call(Array(nextCid[i] - lastCid[i] + 1), 0)
             .map(function (x, y) { return y + lastCid[i]; })
             .filter(function (x) { return i === 0 || x > nextCid[i - 1] || x < lastCid[i - 1]; })
             .sort(function (x, y) { return Math.abs(x - m) - Math.abs(y - m); });
@@ -1332,7 +1333,7 @@ var cosmos = function () {
           playurlInfo.put(cid, data);
           result = (data.querySelector('result') || {}).textContent;
           message = (data.querySelector('message') || data.querySelector('error_text') || {}).textContent;
-          Array.apply(Array, data.querySelectorAll('length')).map(function (o) {
+          [].slice.call(data.querySelectorAll('length'), 0).map(function (o) {
             var len = Number((o || {}).textContent);
             if (!isNaN(len)) length += len;
           });
@@ -1891,9 +1892,10 @@ var cosmos = function () {
 
   // 从URL中截取aid(av), pid号
   var fixLinks = function () {
-    var links = Array.apply(Array, document.querySelectorAll('a[href*="video/av"]:not([href*="rbb="])'));
+    var links = [].slice.call(document.querySelectorAll('a[href*="video/av"]:not([href*="rbb="])'), 0);
     links.forEach(function (link) {
-      var rbb = 'rbb=' + encodeURIComponent(JSON.stringify(videoPage(link.href)));
+      var vp = videoPage(link.href); if (!vp) return;
+      var rbb = 'rbb=' + encodeURIComponent(JSON.stringify(vp));
       if (links.indexOf('#') === -1) link.href += '#' + rbb;
       else link.href += '&' + rbb;
     });
@@ -2000,7 +2002,7 @@ var cosmos = function () {
     try {
       doc = new DOMParser().parseFromString(html, 'text/html');
       var pages = doc.querySelectorAll('#dedepagetitles option');
-      var nodedata = Array.apply(Array, pages).map(function (opt) {
+      var nodedata = [].slice.call(pages, 0).map(function (opt) {
         return [opt.innerHTML, opt.value];
       });
       var title = doc.querySelector('.viewbox h2').innerHTML;
@@ -2263,8 +2265,8 @@ var cosmos = function () {
   // 替换整个文档树
   var replaceDocument = function (doc, scriptLoaded) {
     var stylish = document.querySelectorAll('head style.stylish');
-    Array.apply(Array, stylish).forEach(function (s) { doc.querySelector('head').appendChild(s); });
-    var scripts = Array.apply(Array, doc.querySelectorAll('head script[src]'));
+    [].slice.call(stylish, 0).forEach(function (s) { doc.querySelector('head').appendChild(s); });
+    var scripts = [].slice.call(doc.querySelectorAll('head script[src]'), 0);
     scripts.map(function (s) { return s.parentNode.removeChild(s); });
     var ret = document.replaceChild(doc.documentElement, document.documentElement);
     var count = scripts.length;
@@ -2503,7 +2505,7 @@ var cosmos = function () {
       'cached': getCidCached,
       'undirect': getCidUndirect,
     };
-    methods = Array.apply(Array, methods);
+    methods = [].slice.call(methods, 0);
     var getCid = [];
     (methods || []).forEach(function (method) {
       if (getCids[method]) getCid.push(getCids[method]);
@@ -2539,7 +2541,7 @@ var cosmos = function () {
     var x = {};
     x.push = function () {
       debug("replaceBilibiliBofqi export, arguments: %o", arguments);
-      Array.apply(Array, arguments).forEach(exportHandler);
+      [].slice.call(arguments, 0).forEach(exportHandler);
     };
     if (unsafeWindow.replaceBilibiliBofqi &&
       unsafeWindow.replaceBilibiliBofqi.constructor.name === 'Array')
@@ -2643,7 +2645,7 @@ else setTimeout(cosmos, 0);
       'onload': function (resp) {
         var doc = (new DOMParser()).parseFromString(resp.responseText, 'text/html');
         dataFromDocument(doc).map(function (video) {
-          var cnt = Array.apply(Array, document.querySelectorAll('.vd_list li'));
+          var cnt = [].slice.call(document.querySelectorAll('.vd_list li'), 0);
           cnt.map(function (li) {
             if (~li.querySelector('.title').href.match(/\/av(\d+)/)[1] === ~video.aid)
               li.parentNode.removeChild(li);
@@ -2662,7 +2664,7 @@ else setTimeout(cosmos, 0);
   };
 
   var dataFromDocument = function (doc) {
-    var cnt = Array.apply(Array, doc.querySelectorAll('.vd_list li'));
+    var cnt = [].slice.call(doc.querySelectorAll('.vd_list li'), 0);
     return cnt.map(function (li) {
       try {
         var qs = li.querySelector.bind(li);
@@ -2704,7 +2706,8 @@ else setTimeout(cosmos, 0);
     GM_xmlhttpRequest({
       'method': 'GET',
       'url': 'http://api.bilibili.com/list?pagesize=24&type=json&page=' + page +
-        '&order=default&appkey=8e9fc618fbd41e28&tid=33',
+        '&ios=0&order=default&appkey=0a99fa1d87fdd38c&platform=ios&tid=33',
+      'headers': { 'User-Agent': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0' },
       'onload': function (resp) {
         var respData, i;
         try {
@@ -2878,3 +2881,4 @@ var addStyle = function () {
   ].join(''));
 };
 addStyle();
+
