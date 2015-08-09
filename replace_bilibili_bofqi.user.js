@@ -1,11 +1,11 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name        Replace bilibili bofqi
 // @namespace   http://userscripts.org/users/ts
 // @description 替换哔哩哔哩弹幕网（bilibili.com, bilibili.tv, bilibili.kankanews.com）播放器为原生播放器，直接外站跳转链接可长按选择播放位置，处理少量未审核或仅限会员的视频。
 // @include     /^http://([^/]*\.)?bilibili\.com(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.tv(/.*)?$/
 // @include     /^http://([^/]*\.)?bilibili\.kankanews\.com(/.*)?$/
-// @version     2.62
+// @version     2.63
 // @updateURL   https://tiansh.github.io/rbb/replace_bilibili_bofqi.meta.js
 // @downloadURL https://tiansh.github.io/rbb/replace_bilibili_bofqi.user.js
 // @grant       GM_xmlhttpRequest
@@ -50,6 +50,7 @@ Replace bilibili bofqi
 
 【历史版本】
 
+   * 2.63 ：换个 appkey 
    * 2.62 ：修复个人页面的兼容性
    * 2.61 ：修正对原站播放器的识别，不替换原站播放器视频
    * 2.60 ：临时修正（应该没用）
@@ -140,7 +141,7 @@ var cosmos = function () {
       },
       'view': [
         { // 网页Flash播放器的passkey （batch参数是额外加上去的）
-          'url': 'http://api.bilibili.com/view?type=json&id={{aid}}&batch=1&appkey=8e9fc618fbd41e28',
+          'url': 'http://api.bilibili.com/view?type=json&id={{aid}}&batch=1&appkey=0a99fa1d87fdd38c',
           'ua': navigator.userAgent,
         },
         { // 手机客户端的passkey（苹果系统与安卓系统的区别在于platform参数和userAgent）
@@ -149,8 +150,8 @@ var cosmos = function () {
           'ua': 'bilianime/570 CFNetwork/672.0.8 Darwin/14.0.0',
         },
       ],
-      'playurl': 'http://interface.bilibili.com/playurl?cid={{cid}}&appkey=8e9fc618fbd41e28',
-      'player': 'http://interface.bilibili.com/player?id=cid:{{cid}}&appkey=8e9fc618fbd41e28',
+      'playurl': 'http://interface.bilibili.com/playurl?cid={{cid}}&appkey=0a99fa1d87fdd38c',
+      'player': 'http://interface.bilibili.com/player?id=cid:{{cid}}&appkey=0a99fa1d87fdd38c',
       'suggest': 'http://{{host}}/suggest?term=av{{aid}}' +
         '&jsoncallback={{callback}}&rnd={{random}}&_={{date}}',
       'html5': 'http://m.acg.tv/m/html5?aid={{aid}}&page={{pid}}',
@@ -2881,4 +2882,3 @@ var addStyle = function () {
   ].join(''));
 };
 addStyle();
-
